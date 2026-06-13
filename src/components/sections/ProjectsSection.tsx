@@ -1,21 +1,33 @@
 'use client'
 import Link from 'next/link'
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import clsx from 'clsx'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useLenis } from 'lenis/react'
 import { PROJECTS, type Project } from '@/lib/data'
-import { Reveal, SectionHeader, StackPills } from '@/components/ui'
+import { SectionHeader, StackPills } from '@/components/ui'
+import { VelocitySkew } from '@/components/ui/VelocitySkew'
 import { LiquidButton } from '@/components/ui/liquid-glass-button'
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
 
 // ── Single project card ─────────────────────────────────────
 function ProjectCard({ p }: { p: Project }) {
   return (
     <div className="h-full flex flex-col rounded-[22px] overflow-hidden border border-white/[0.08] bg-surface">
-      {/* Image */}
-      <div
-        className="h-[230px] flex items-center justify-center text-[68px] shrink-0"
-        style={{ background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})` }}
-      >
-        {p.emoji}
+      {/* Image — emoji + bg drift horizontally as the card crosses the viewport center */}
+      <div className="relative h-[320px] overflow-hidden shrink-0">
+        <div
+          data-parallax-bg
+          className="absolute -top-[20%] -bottom-[20%] -left-[14%] -right-[14%] will-change-transform"
+          style={{ background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})` }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span data-parallax-fg className="text-[68px] will-change-transform">{p.emoji}</span>
+        </div>
       </div>
 
       {/* Body */}
@@ -31,102 +43,165 @@ function ProjectCard({ p }: { p: Project }) {
   )
 }
 
-// ── Projects carousel ───────────────────────────────────────
+// ── Projects — scroll-driven horizontal carousel ────────────
 export default function ProjectsSection() {
   const projects = PROJECTS
-  const scrollerRef = useRef<HTMLDivElement>(null)
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
+  const lenis = useLenis()
+  const sectionRef = useRef<HTMLElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const slotRefs = useRef<(HTMLDivElement | null)[]>([])
+  const viewAllRef = useRef<HTMLDivElement>(null)
+  const stRef = useRef<ScrollTrigger | null>(null)
+  const activeRef = useRef(0)
   const [active, setActive] = useState(0)
 
-  const updateActive = useCallback(() => {
-    const scroller = scrollerRef.current
-    if (!scroller) return
-    const center = scroller.scrollLeft + scroller.clientWidth / 2
-    let best = 0
-    let bestDist = Infinity
-    cardRefs.current.forEach((c, i) => {
-      if (!c) return
-      const cCenter = c.offsetLeft + c.offsetWidth / 2
-      const d = Math.abs(cCenter - center)
-      if (d < bestDist) {
-        bestDist = d
-        best = i
+  useEffect(() => {
+    const section = sectionRef.current
+    const stage = stageRef.current
+    const track = trackRef.current
+    if (!section || !stage || !track) return
+
+    const ctx = gsap.context(() => {
+      // Cache the layered elements per card (transform targets never overlap)
+      const slots = slotRefs.current.filter(Boolean) as HTMLDivElement[]
+      const emph = slots.map(s => s.querySelector<HTMLElement>('[data-emph]'))
+      const bg = slots.map(s => s.querySelector<HTMLElement>('[data-parallax-bg]'))
+      const fg = slots.map(s => s.querySelector<HTMLElement>('[data-parallax-fg]'))
+      const firstEntry = slots[0]?.querySelector<HTMLElement>('[data-entry]') ?? null
+      const viewAll = viewAllRef.current
+
+      // Exact translate needed to center the LAST card (layout-based, transform-proof)
+      const getMaxX = () => {
+        const last = slots[slots.length - 1]
+        return last.offsetLeft + last.offsetWidth / 2 - track.clientWidth / 2
       }
-    })
-    setActive(best)
+      // Extra scroll past the last card during which the "View all" button reveals
+      const revealDist = () => Math.min(window.innerHeight * 0.7, 560)
+
+      // Continuous emphasis + horizontal image parallax, driven by each card's
+      // live distance from the viewport center.
+      const render = () => {
+        const viewCenter = window.innerWidth / 2
+        let best = 0
+        let bestDist = Infinity
+        slots.forEach((slot, i) => {
+          const r = slot.getBoundingClientRect()
+          const dist = r.left + r.width / 2 - viewCenter
+          const ad = Math.abs(dist)
+          if (ad < bestDist) { bestDist = ad; best = i }
+          const norm = Math.min(ad / (r.width * 0.9), 1)
+          // center card pops to 1.04, neighbors shrink/dim toward the edges
+          gsap.set(emph[i], { scale: 1.04 - norm * 0.24, autoAlpha: 1 - norm * 0.6 })
+          // layered drift — emoji moves opposite the card, bg trails it (depth)
+          gsap.set(fg[i], { x: dist * -0.07 })
+          gsap.set(bg[i], { x: dist * 0.045 })
+        })
+        if (best !== activeRef.current) { activeRef.current = best; setActive(best) }
+      }
+
+      // Pin the stage and translate the track horizontally with vertical scroll.
+      // Scroll down → progress↑ → track moves left → next card enters from the right.
+      // The final `revealDist` of scroll holds the last card and parallaxes in the CTA.
+      const st = ScrollTrigger.create({
+        trigger: stage,
+        start: 'top top',
+        end: () => '+=' + (getMaxX() + revealDist()),
+        pin: true,
+        scrub: 1,
+        invalidateOnRefresh: true,
+        onRefresh: render,
+        onUpdate: (self) => {
+          const maxX = getMaxX()
+          const dist = self.progress * (maxX + revealDist())
+          // Phase 1: slide the track until the last card is centered, then hold.
+          gsap.set(track, { x: -Math.min(dist, maxX) })
+          // Phase 2: reveal the "View all" CTA with a parallax rise + blur clear.
+          const rp = gsap.utils.clamp(0, 1, (dist - maxX) / revealDist())
+          if (viewAll) {
+            gsap.set(viewAll, {
+              autoAlpha: rp,
+              y: (1 - rp) * 70,
+              scale: 0.92 + rp * 0.08,
+              filter: `blur(${(1 - rp) * 12}px)`,
+            })
+          }
+          render()
+        },
+      })
+      stRef.current = st
+
+      // First card: parallax entrance as you scroll in from the pricing section.
+      if (firstEntry) {
+        gsap.fromTo(
+          firstEntry,
+          { xPercent: 26, autoAlpha: 0.3, filter: 'blur(14px)' },
+          {
+            xPercent: 0, autoAlpha: 1, filter: 'blur(0px)', ease: 'none',
+            scrollTrigger: {
+              trigger: stage,
+              start: 'top bottom',
+              end: 'top top',
+              scrub: true,
+              onUpdate: render,
+            },
+          },
+        )
+      }
+
+      if (viewAll) gsap.set(viewAll, { autoAlpha: 0 })
+      render()
+    }, section)
+
+    return () => ctx.revert()
   }, [])
 
-  useEffect(() => {
-    const scroller = scrollerRef.current
-    if (!scroller) return
-    updateActive()
-    scroller.addEventListener('scroll', updateActive, { passive: true })
-    window.addEventListener('resize', updateActive)
-    return () => {
-      scroller.removeEventListener('scroll', updateActive)
-      window.removeEventListener('resize', updateActive)
-    }
-  }, [updateActive])
-
+  // Dots jump to a card by scrolling the page to where that card is centered.
   const scrollToIndex = (i: number) => {
-    const card = cardRefs.current[i]
-    const scroller = scrollerRef.current
-    if (!card || !scroller) return
-    const left = card.offsetLeft - (scroller.clientWidth - card.offsetWidth) / 2
-    scroller.scrollTo({ left, behavior: 'smooth' })
+    const st = stRef.current
+    const track = trackRef.current
+    const slot = slotRefs.current[i]
+    if (!st || !track || !slot) return
+    const offset = slot.offsetLeft + slot.offsetWidth / 2 - track.clientWidth / 2
+    const target = st.start + offset
+    if (lenis) lenis.scrollTo(target, { duration: 1 })
+    else window.scrollTo({ top: target, behavior: 'smooth' })
   }
 
-  const go = (dir: -1 | 1) => scrollToIndex(Math.min(projects.length - 1, Math.max(0, active + dir)))
-
   return (
-    <section id="projects" className="py-[140px] overflow-hidden">
+    <section ref={sectionRef} id="projects" className="py-[140px] overflow-hidden">
       <SectionHeader
         label="Our work"
         title="Products, not just projects."
-        sub="We build for real users. Here's a selection of what we've shipped."
+        sub="Scroll to move through our work — each project slides in as you go."
       />
 
-      {/* Carousel track */}
-      <Reveal>
+      {/* Pinned horizontal stage */}
+      <div ref={stageRef} className="relative h-screen flex flex-col justify-center overflow-hidden">
         <div
-          ref={scrollerRef}
-          className="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth
-                     px-[calc((100%-min(640px,84vw))/2)] py-4
-                     [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          ref={trackRef}
+          className="relative flex gap-8 will-change-transform px-[calc((100vw-min(760px,84vw))/2)]"
         >
           {projects.map((p, i) => (
             <div
               key={p.id}
-              ref={(el) => { cardRefs.current[i] = el }}
-              onClick={() => i !== active && scrollToIndex(i)}
-              className={clsx(
-                'snap-center shrink-0 w-[min(640px,84vw)] transition-all duration-500 ease-out',
-                i === active
-                  ? 'opacity-100 scale-100'
-                  : 'opacity-40 scale-[0.9] cursor-pointer hover:opacity-60',
-              )}
+              ref={(el) => { slotRefs.current[i] = el }}
+              data-slot
+              className="shrink-0 w-[min(760px,84vw)]"
             >
-              <ProjectCard p={p} />
+              <div data-emph className="h-full" style={{ opacity: i === 0 ? 1 : 0.4 }}>
+                <div data-entry className="h-full">
+                  <VelocitySkew className="h-full" maxSkew={5} intensity={0.18}>
+                    <ProjectCard p={p} />
+                  </VelocitySkew>
+                </div>
+              </div>
             </div>
           ))}
         </div>
-      </Reveal>
 
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-6 mt-10">
-        <button
-          onClick={() => go(-1)}
-          disabled={active === 0}
-          aria-label="Previous project"
-          className="w-11 h-11 rounded-full border border-white/[0.12] text-ink flex items-center justify-center
-                     transition-all duration-200 hover:border-white/30 hover:bg-white/[0.04]
-                     disabled:opacity-30 disabled:pointer-events-none"
-        >
-          ←
-        </button>
-
-        {/* Dots */}
-        <div className="flex items-center gap-2">
+        {/* Dots — progress + jump */}
+        <div className="flex items-center justify-center gap-2 mt-8">
           {projects.map((p, i) => (
             <button
               key={p.id}
@@ -140,26 +215,14 @@ export default function ProjectsSection() {
           ))}
         </div>
 
-        <button
-          onClick={() => go(1)}
-          disabled={active === projects.length - 1}
-          aria-label="Next project"
-          className="w-11 h-11 rounded-full border border-white/[0.12] text-ink flex items-center justify-center
-                     transition-all duration-200 hover:border-white/30 hover:bg-white/[0.04]
-                     disabled:opacity-30 disabled:pointer-events-none"
-        >
-          →
-        </button>
-      </div>
-
-      <div className="text-center mt-12">
-        <Reveal>
+        {/* View all — parallaxes in once you reach the last card */}
+        <div ref={viewAllRef} className="text-center mt-8 will-change-transform">
           <Link href="/works">
             <LiquidButton size="xl" className="text-white border border-white/20 font-semibold text-[15px]">
               View all projects →
             </LiquidButton>
           </Link>
-        </Reveal>
+        </div>
       </div>
     </section>
   )

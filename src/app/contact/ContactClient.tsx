@@ -1,9 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { PageHero, Reveal } from '@/components/ui'
 import { LiquidButton } from '@/components/ui/liquid-glass-button'
+
+// Pricing plans (mirror PricingSection) → prefill the form when ?plan= is passed
+const PLAN_PREFILL: Record<string, { name: string; price: string; service: string; budget: string }> = {
+  basic:       { name: 'Basic Website',             price: 'Rp 1 – 2,5 jt', service: 'Web Development',  budget: 'Under Rp 5.000.000' },
+  interactive: { name: 'Interactive User Website',  price: 'Rp 3,5 – 7 jt', service: 'Web Development',  budget: 'Rp 5 – 15 juta'     },
+  scale:       { name: 'Big Users Website',         price: 'Rp 10 jt',      service: 'Full-stack Product', budget: 'Rp 5 – 15 juta'  },
+  custom:      { name: 'Custom',                    price: 'Rp 3 – 20 jt',  service: 'Full-stack Product', budget: ''                 },
+}
 
 const CHANNELS = [
   { icon: '📧', label: 'Email',    value: 'hello@naty.dev',              href: 'mailto:hello@naty.dev',                  bg: 'rgba(255,255,255,0.1)'  },
@@ -31,6 +40,20 @@ export default function ContactClient() {
   const [company, setCompany] = useState('')
   const [errors, setErrors] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+
+  // Prefill from a pricing card click (?plan=basic|interactive|scale|custom)
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const plan = searchParams.get('plan')
+    if (!plan) return
+    const p = PLAN_PREFILL[plan]
+    if (!p) return
+    setService(p.service)
+    setBudget(p.budget)
+    setMessage(prev =>
+      prev ? prev : `Hi NATY! I'm interested in the "${p.name}" plan (${p.price}). Here's a bit about my project:\n\n`,
+    )
+  }, [searchParams])
 
   const handleSubmit = () => {
     const errs: string[] = []

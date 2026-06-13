@@ -1,9 +1,15 @@
 'use client'
 
-import { motion, useInView, useAnimationFrame } from 'framer-motion'
+import { useAnimationFrame } from 'framer-motion'
 import { useLenis } from 'lenis/react'
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import clsx from 'clsx'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
 
 // ── Reveal wrapper ────────────────────────────────────
 interface RevealProps {
@@ -11,21 +17,59 @@ interface RevealProps {
   delay?: number
   className?: string
   y?: number
+  /** disable blur-in for large/expensive subtrees */
+  blur?: boolean
+  /**
+   * Tie the reveal to scroll position (scrubbed) instead of a one-shot pop-in.
+   * `true` = scrub:1, or pass a number for a custom scrub smoothing.
+   * Scrubbed reveals are reversible — they play forward/back with the scroll.
+   */
+  scrub?: boolean | number
 }
 
-export function Reveal({ children, delay = 0, className, y = 36 }: RevealProps) {
-  const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '0px 0px -40px 0px' })
+export function Reveal({ children, delay = 0, className, y = 52, blur = true, scrub = false }: RevealProps) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ctx = gsap.context(() => {
+      const fromVars = { autoAlpha: 0, y, filter: blur ? 'blur(16px)' : 'blur(0px)' }
+
+      if (scrub) {
+        // Scrubbed: opacity/y/blur follow scroll progress (reversible)
+        gsap.fromTo(el, fromVars, {
+          autoAlpha: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 90%',
+            end: 'top 55%',
+            scrub: scrub === true ? 1 : scrub,
+          },
+        })
+      } else {
+        // One-shot pop-in
+        gsap.fromTo(el, fromVars, {
+          autoAlpha: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          duration: 1.1,
+          delay,
+          ease: 'expo.out',
+          scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+        })
+      }
+    }, el)
+    return () => ctx.revert()
+  }, [delay, y, blur, scrub])
+
   return (
-    <motion.div
-      ref={ref}
-      className={className}
-      initial={{ opacity: 0, y }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
-    >
+    <div ref={ref} className={className} style={{ visibility: 'hidden' }}>
       {children}
-    </motion.div>
+    </div>
   )
 }
 
