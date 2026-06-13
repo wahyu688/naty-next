@@ -34,7 +34,7 @@ export function WebGLShader() {
       }
     `
 
-    // Tuned for NATY dark palette — violet/purple chromatic wave
+    // Tuned for NATY grayscale palette — monochrome chromatic wave
     const fragmentShader = `
       precision highp float;
       uniform vec2 resolution;
@@ -56,12 +56,9 @@ export function WebGLShader() {
         float g = 0.03 / abs(p.y + sin((gx + time) * xScale) * yScale);
         float b = 0.07 / abs(p.y + sin((bx + time) * xScale) * yScale);
 
-        // Tint toward NATY violet — suppress green, boost blue/red ratio
-        float vr = r * 0.55 + b * 0.35;
-        float vg = g * 0.25;
-        float vb = b * 0.85 + r * 0.25;
-
-        gl_FragColor = vec4(vr, vg, vb, 1.0);
+        // Collapse to grayscale luminance — neutral white/gray waves
+        float lum = r * 0.4 + g * 0.35 + b * 0.45;
+        gl_FragColor = vec4(vec3(lum), 1.0);
       }
     `
 
@@ -69,7 +66,7 @@ export function WebGLShader() {
       refs.scene = new THREE.Scene()
       refs.renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
       refs.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-      refs.renderer.setClearColor(new THREE.Color(0x08090d))
+      refs.renderer.setClearColor(new THREE.Color(0x0a0a0a))
 
       refs.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, -1)
 

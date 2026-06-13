@@ -23,8 +23,8 @@ export default function HomePage() {
       <HeroSection />
       <Marquee items={MARQUEE_ITEMS} />
       <AboutSection />
-      <TeamSection />
       <ProjectsSection />
+      <TeamSection />
       <SkillsSection />
       <ContactCTA />
     </>

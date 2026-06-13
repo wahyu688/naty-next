@@ -4,11 +4,15 @@
 
 @layer base {
   :root {
-    --violet-dim: rgba(124, 92, 252, 0.13);
-    --amber-dim:  rgba(245, 166, 35, 0.09);
+    --violet-dim: rgba(255, 255, 255, 0.08);
+    --amber-dim:  rgba(255, 255, 255, 0.05);
   }
 
-  html { scroll-behavior: smooth; }
+  /* Lenis drives smooth scroll — native smooth-behavior must be off */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-stopped { overflow: hidden; }
 
   body {
     @apply bg-bg text-ink antialiased;
@@ -16,27 +20,27 @@
   }
 
   h1, h2, h3, h4 {
-    font-family: var(--font-space-grotesk), sans-serif;
+    font-family: var(--font-bricolage), sans-serif;
   }
 
   ::selection {
-    background: rgba(124, 92, 252, 0.3);
-    color: #f0eeff;
+    background: rgba(255, 255, 255, 0.2);
+    color: #0a0a0a;
   }
 
-  * { scrollbar-width: thin; scrollbar-color: rgba(124,92,252,0.3) transparent; }
+  * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
   *::-webkit-scrollbar { width: 4px; }
   *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb { background: rgba(124,92,252,0.3); border-radius: 99px; }
+  *::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 99px; }
 }
 
 @layer components {
   /* ── Buttons ── */
   .btn-primary {
     @apply inline-block font-display font-semibold text-[15px] px-8 py-3.5
-           bg-violet text-white rounded-full
+           bg-ink text-bg rounded-full
            transition-all duration-200
-           hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(124,92,252,0.25)];
+           hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(255,255,255,0.15)];
   }
 
   .btn-ghost {
@@ -70,18 +74,18 @@
   /* ── Tag pills ── */
   .tag {
     @apply text-[11px] font-medium px-3 py-1 rounded-full
-           bg-[rgba(124,92,252,0.13)] text-violet-soft
-           border border-[rgba(124,92,252,0.15)];
+           bg-[rgba(255,255,255,0.08)] text-violet-soft
+           border border-[rgba(255,255,255,0.12)];
   }
   .tag-amber {
     @apply text-[11px] font-medium px-3 py-1 rounded-full
-           bg-[rgba(245,166,35,0.1)] text-amber
-           border border-[rgba(245,166,35,0.15)];
+           bg-[rgba(255,255,255,0.06)] text-amber
+           border border-[rgba(255,255,255,0.1)];
   }
   .tag-teal {
     @apply text-[11px] font-medium px-3 py-1 rounded-full
-           bg-[rgba(93,202,165,0.1)] text-teal
-           border border-[rgba(93,202,165,0.15)];
+           bg-[rgba(255,255,255,0.06)] text-teal
+           border border-[rgba(255,255,255,0.1)];
   }
 
   /* ── Stack pill ── */
@@ -102,7 +106,7 @@
 
   .outline-text {
     color: transparent;
-    -webkit-text-stroke: 1.5px rgba(240,238,255,0.18);
+    -webkit-text-stroke: 1.5px rgba(255,255,255,0.2);
   }
 }
 
@@ -113,10 +117,10 @@
 
 /* ── Skill bar ── */
 .skill-bar-fill {
-  @apply h-full rounded-full bg-gradient-to-r from-violet to-violet-soft;
+  @apply h-full rounded-full bg-gradient-to-r from-violet-soft to-ink;
   transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .skill-bar-fill-amber {
-  @apply h-full rounded-full bg-gradient-to-r from-amber to-[#ffcc60];
+  @apply h-full rounded-full bg-gradient-to-r from-muted to-violet-soft;
   transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
 }

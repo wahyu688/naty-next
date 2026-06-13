@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import { useInView } from 'framer-motion'
 import Link from 'next/link'
 import { MEMBERS } from '@/lib/data'
+import { LiquidButton } from '@/components/ui/liquid-glass-button'
 
 // ── Pixel renderer ──────────────────────────────────────────
 const PX = 8
@@ -184,9 +185,9 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
       {!hasPhoto && (
         <label className="absolute inset-0 z-[5] flex items-center justify-center cursor-pointer group">
           <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-          <div className="text-center px-8 py-5 border border-dashed border-violet/30 rounded-xl
+          <div className="text-center px-8 py-5 border border-dashed border-white/20 rounded-xl
                           bg-bg/70 backdrop-blur-sm pointer-events-none
-                          group-hover:border-violet/50 transition-colors duration-200">
+                          group-hover:border-white/40 transition-colors duration-200">
             <div className="text-3xl mb-2">📷</div>
             <p className="text-[13px] text-muted">
               <span className="text-violet-soft font-medium">Upload foto {member.shortName}</span>
@@ -230,8 +231,12 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
           ))}
         </div>
         <div className="flex gap-3">
-          <Link href={member.github} className="btn-sm">GitHub →</Link>
-          <Link href={member.linkedin} className="btn-sm">LinkedIn →</Link>
+          <Link href={member.github}>
+            <LiquidButton size="sm" className="text-white border border-white/20 font-medium">GitHub →</LiquidButton>
+          </Link>
+          <Link href={member.linkedin}>
+            <LiquidButton size="sm" className="text-white border border-white/20 font-medium">LinkedIn →</LiquidButton>
+          </Link>
         </div>
       </div>
 

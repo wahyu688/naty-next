@@ -44,7 +44,7 @@ function PasswordGate({ onUnlock }: { onUnlock: (pwd: string) => void }) {
 
         <div className={clsx(
           'bg-surface border rounded-card p-8 transition-all duration-200',
-          error ? 'border-red/50 shadow-[0_0_0_3px_rgba(226,75,74,0.1)]' : 'border-white/[0.09]'
+          error ? 'border-red/60 shadow-[0_0_0_3px_rgba(255,255,255,0.12)]' : 'border-white/[0.09]'
         )}>
           <label className="block text-[12px] font-medium tracking-[0.08em] uppercase text-muted mb-3">
             Password
@@ -58,7 +58,7 @@ function PasswordGate({ onUnlock }: { onUnlock: (pwd: string) => void }) {
             autoFocus
             className="w-full bg-bg border border-white/[0.09] rounded-sm px-4 py-3 text-[14px]
                        text-ink outline-none transition-all duration-200
-                       focus:border-violet/50 focus:shadow-[0_0_0_3px_rgba(124,92,252,0.1)]
+                       focus:border-violet/50 focus:shadow-[0_0_0_3px_rgba(255,255,255,0.08)]
                        placeholder:text-muted/40"
           />
           {error && (
@@ -68,7 +68,7 @@ function PasswordGate({ onUnlock }: { onUnlock: (pwd: string) => void }) {
             onClick={handleSubmit}
             disabled={loading}
             className="mt-4 w-full font-display font-semibold text-[14px] py-3 rounded-sm
-                       bg-violet text-white transition-all duration-200
+                       bg-ink text-bg transition-all duration-200
                        hover:opacity-90 disabled:opacity-50"
           >
             {loading ? 'Checking...' : 'Enter Dashboard →'}
@@ -172,13 +172,13 @@ function SummarizeModal({ member, password, onApply, onClose }: SummarizeModalPr
                 placeholder="https://github.com/username"
                 className="flex-1 bg-bg border border-white/[0.09] rounded-sm px-4 py-3 text-[14px]
                            text-ink outline-none transition-all duration-200
-                           focus:border-violet/50 focus:shadow-[0_0_0_3px_rgba(124,92,252,0.1)]
+                           focus:border-violet/50 focus:shadow-[0_0_0_3px_rgba(255,255,255,0.08)]
                            placeholder:text-muted/40"
               />
               <button
                 onClick={handleSummarize}
                 disabled={loading || !githubUrl.trim()}
-                className="px-5 py-3 bg-violet text-white font-display font-semibold text-[13px]
+                className="px-5 py-3 bg-ink text-bg font-display font-semibold text-[13px]
                            rounded-sm transition-all duration-200 hover:opacity-90
                            disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
               >
@@ -253,7 +253,7 @@ function SummarizeModal({ member, password, onApply, onClose }: SummarizeModalPr
                   rows={4}
                   className="w-full bg-bg border border-violet/30 rounded-sm px-4 py-3 text-[14px]
                              text-ink outline-none resize-none leading-[1.7]
-                             focus:border-violet/60 focus:shadow-[0_0_0_3px_rgba(124,92,252,0.1)]
+                             focus:border-violet/60 focus:shadow-[0_0_0_3px_rgba(255,255,255,0.08)]
                              transition-all duration-200"
                 />
                 <p className="text-[11px] text-muted mt-1">Edit before applying if needed</p>
@@ -281,8 +281,8 @@ function SummarizeModal({ member, password, onApply, onClose }: SummarizeModalPr
                   onClose()
                 }}
                 className="w-full font-display font-semibold text-[14px] py-3.5 rounded-sm
-                           bg-violet text-white transition-all duration-200
-                           hover:opacity-90 hover:shadow-[0_8px_24px_rgba(124,92,252,0.3)]"
+                           bg-ink text-bg transition-all duration-200
+                           hover:opacity-90 hover:shadow-[0_8px_24px_rgba(255,255,255,0.2)]"
               >
                 ✓ Apply to profile
               </button>
@@ -311,7 +311,7 @@ function MemberEditor({ member, password, onSaved }: MemberEditorProps) {
   const [showSummarize, setShowSummarize] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const accent = ACCENTS[member.id] ?? '#7c5cfc'
+  const accent = ACCENTS[member.id] ?? '#ededed'
 
   const set = (key: keyof MemberRow, val: any) =>
     setForm(prev => ({ ...prev, [key]: val }))
@@ -443,7 +443,7 @@ function MemberEditor({ member, password, onSaved }: MemberEditorProps) {
                 onChange={e => set('name', e.target.value)}
                 className="w-full bg-bg border border-white/[0.07] rounded-sm px-3 py-2.5
                            text-[13px] text-ink outline-none transition-all duration-200
-                           focus:border-violet/40 focus:shadow-[0_0_0_2px_rgba(124,92,252,0.08)]"
+                           focus:border-violet/40 focus:shadow-[0_0_0_2px_rgba(255,255,255,0.06)]"
               />
             </div>
 
@@ -457,7 +457,7 @@ function MemberEditor({ member, password, onSaved }: MemberEditorProps) {
                 onChange={e => set('role', e.target.value)}
                 className="w-full bg-bg border border-white/[0.07] rounded-sm px-3 py-2.5
                            text-[13px] text-ink outline-none transition-all duration-200
-                           focus:border-violet/40 focus:shadow-[0_0_0_2px_rgba(124,92,252,0.08)]"
+                           focus:border-violet/40 focus:shadow-[0_0_0_2px_rgba(255,255,255,0.06)]"
               />
             </div>
 
@@ -473,7 +473,7 @@ function MemberEditor({ member, password, onSaved }: MemberEditorProps) {
                 rows={3}
                 className="w-full bg-bg border border-white/[0.07] rounded-sm px-3 py-2.5
                            text-[13px] text-ink outline-none resize-none leading-[1.65]
-                           focus:border-violet/40 focus:shadow-[0_0_0_2px_rgba(124,92,252,0.08)]
+                           focus:border-violet/40 focus:shadow-[0_0_0_2px_rgba(255,255,255,0.06)]
                            transition-all duration-200"
               />
             </div>
@@ -487,8 +487,8 @@ function MemberEditor({ member, password, onSaved }: MemberEditorProps) {
                 {form.tags.map(t => (
                   <span key={t}
                     className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1
-                               rounded-full bg-[rgba(124,92,252,0.13)] text-violet-soft
-                               border border-[rgba(124,92,252,0.15)]">
+                               rounded-full bg-[rgba(255,255,255,0.08)] text-violet-soft
+                               border border-[rgba(255,255,255,0.12)]">
                     {t}
                     <button onClick={() => removeTag(t)} className="hover:text-red transition-colors ml-0.5">×</button>
                   </span>
@@ -551,8 +551,8 @@ function MemberEditor({ member, password, onSaved }: MemberEditorProps) {
               'mt-5 w-full font-display font-semibold text-[13px] py-3 rounded-sm',
               'transition-all duration-200',
               saved
-                ? 'bg-teal/20 text-teal border border-teal/30'
-                : 'bg-violet text-white hover:opacity-90 disabled:opacity-50'
+                ? 'bg-white/10 text-ink border border-white/25'
+                : 'bg-ink text-bg hover:opacity-90 disabled:opacity-50'
             )}
           >
             {saving ? (
@@ -666,7 +666,7 @@ export default function DashboardClient() {
             className={clsx(
               'font-display text-[13px] font-medium px-4 py-1.5 rounded-full border transition-all duration-200',
               activeTab === 'all'
-                ? 'bg-violet border-violet text-white'
+                ? 'bg-ink border-ink text-bg'
                 : 'bg-transparent border-white/[0.09] text-muted hover:text-ink hover:border-white/20'
             )}
           >
@@ -679,7 +679,7 @@ export default function DashboardClient() {
               className={clsx(
                 'font-display text-[13px] font-medium px-4 py-1.5 rounded-full border transition-all duration-200',
                 activeTab === m.id
-                  ? 'text-white border-transparent'
+                  ? 'text-bg border-transparent'
                   : 'bg-transparent border-white/[0.09] text-muted hover:text-ink hover:border-white/20'
               )}
               style={activeTab === m.id ? { background: ACCENTS[m.id], borderColor: ACCENTS[m.id] } : {}}

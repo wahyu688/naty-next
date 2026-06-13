@@ -32,13 +32,13 @@ export default function Navbar() {
 
   return (
     <nav className={clsx(
-      'fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-10 py-5',
+      'fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-10 py-2',
       'backdrop-blur-xl border-b border-white/[0.05]',
       'transition-[background] duration-300',
       scrolled && 'bg-bg/80',
     )}>
-      <Link href="/" className="font-display font-bold text-[22px] tracking-[-0.03em] text-ink no-underline">
-        NAT<span className="text-violet">Y</span>
+      <Link href="/" className="no-underline">
+        <img src="/logo.svg" alt="NATY" className="h-24 w-auto" />
       </Link>
 
       <ul className="hidden md:flex gap-9 list-none">

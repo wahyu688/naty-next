@@ -9,21 +9,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg:           '#08090d',
-        surface:      '#0f111a',
-        surface2:     '#161927',
-        violet:       '#7c5cfc',
-        'violet-soft':'#9b7dfd',
-        amber:        '#f5a623',
-        teal:         '#5dcaa5',
-        red:          '#e24b4a',
-        blue:         '#378add',
-        ink:          '#f0eeff',
-        muted:        '#8b8aad',
+        // ── Grayscale modern palette ──
+        bg:           '#0a0a0a',
+        surface:      '#151515',
+        surface2:     '#202020',
+        // accent tokens kept (names unchanged) but remapped to neutral grays
+        violet:       '#ededed',   // primary accent → near-white
+        'violet-soft':'#9e9e9e',   // dimmer accent → mid gray (labels)
+        amber:        '#cacaca',
+        teal:         '#b5b5b5',
+        red:          '#e0e0e0',
+        blue:         '#9a9a9a',
+        ink:          '#f5f5f5',
+        muted:        '#8e8e8e',
       },
       fontFamily: {
         sans:    ['var(--font-inter)', 'sans-serif'],
-        display: ['var(--font-space-grotesk)', 'sans-serif'],
+        display: ['var(--font-bricolage)', 'sans-serif'],
       },
       borderColor: {
         DEFAULT: 'rgba(255,255,255,0.05)',

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Reveal } from '@/components/ui'
+import { LiquidButton } from '@/components/ui/liquid-glass-button'
 
 export default function ContactCTA() {
   return (
@@ -18,7 +19,11 @@ export default function ContactCTA() {
           </p>
         </Reveal>
         <Reveal delay={0.3}>
-          <Link href="/contact" className="btn-primary">Start a conversation →</Link>
+          <Link href="/contact">
+            <LiquidButton size="xl" className="text-white border border-white/20 font-semibold text-[15px]">
+              Start a conversation →
+            </LiquidButton>
+          </Link>
         </Reveal>
       </div>
     </section>

@@ -15,19 +15,19 @@ const FILTERS = [
 ]
 
 const TYPE_STYLES: Record<string, string> = {
-  project:   'bg-[rgba(124,92,252,0.13)] text-violet-soft',
-  award:     'bg-[rgba(245,166,35,0.1)] text-amber',
-  learning:  'bg-[rgba(93,202,165,0.1)] text-teal',
-  milestone: 'bg-[rgba(226,75,74,0.1)] text-red',
+  project:   'bg-[rgba(255,255,255,0.1)] text-ink',
+  award:     'bg-[rgba(255,255,255,0.07)] text-violet-soft',
+  learning:  'bg-[rgba(255,255,255,0.06)] text-violet-soft',
+  milestone: 'bg-[rgba(255,255,255,0.05)] text-muted',
 }
 
 const MARQUEE = ['2023','2024','2025','Projects','Hackathons','Internships','Coursework','Launches','Awards']
 
 function EntryCard({ entry }: { entry: TimelineEntry }) {
   const member = entry.member >= 0 ? MEMBERS[entry.member] : null
-  const dotColor = member?.color.accent ?? '#7c5cfc'
-  const badgeBg  = member ? `rgba(${member.color.tint.join(',')},0.15)` : 'rgba(124,92,252,0.13)'
-  const badgeColor= member?.color.glow ?? '#9b7dfd'
+  const dotColor = member?.color.accent ?? '#ededed'
+  const badgeBg  = member ? `rgba(${member.color.tint.join(',')},0.15)` : 'rgba(255,255,255,0.1)'
+  const badgeColor= member?.color.glow ?? '#ededed'
 
   return (
     <div className="relative pl-10 mb-5 group"
@@ -107,7 +107,7 @@ export default function TimelineClient() {
             return (
               <div key={year} className="mb-14">
                 <div className="font-display font-bold leading-[1] tracking-[-0.05em] mb-6 -ml-0 select-none"
-                     style={{ fontSize: 'clamp(3rem,6vw,5rem)', color: 'transparent', WebkitTextStroke: '1px rgba(240,238,255,0.08)' }}>
+                     style={{ fontSize: 'clamp(3rem,6vw,5rem)', color: 'transparent', WebkitTextStroke: '1px rgba(255,255,255,0.1)' }}>
                   {year}
                 </div>
                 {entries.map(e => <EntryCard key={e.id} entry={e} />)}

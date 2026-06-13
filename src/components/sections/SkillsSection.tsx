@@ -81,8 +81,8 @@ export default function SkillsSection() {
                   className={`font-display text-[13px] font-medium px-4 py-2 rounded-full border cursor-default
                              transition-all duration-200 hover:-translate-y-0.5 ${
                     t.hot
-                      ? 'bg-[rgba(124,92,252,0.13)] border-[rgba(124,92,252,0.2)] text-violet-soft'
-                      : 'bg-bg border-white/[0.05] text-muted hover:text-violet-soft hover:border-violet/25'
+                      ? 'bg-[rgba(255,255,255,0.08)] border-[rgba(255,255,255,0.14)] text-ink'
+                      : 'bg-bg border-white/[0.05] text-muted hover:text-ink hover:border-white/20'
                   }`}>
                   {t.label}
                 </span>

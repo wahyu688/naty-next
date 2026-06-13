@@ -10,9 +10,7 @@ const LINKS = [
 export default function Footer() {
   return (
     <footer className="border-t border-white/[0.05] px-10 py-8 flex flex-wrap items-center justify-between gap-4 text-[13px] text-muted">
-      <div className="font-display font-bold text-[16px] text-ink">
-        NAT<span className="text-violet">Y</span>
-      </div>
+      <img src="/logo.svg" alt="NATY" className="h-7 w-auto" />
       <nav className="flex gap-6">
         {LINKS.map(l => (
           <Link key={l.href} href={l.href} className="text-muted hover:text-ink transition-colors duration-200 no-underline">

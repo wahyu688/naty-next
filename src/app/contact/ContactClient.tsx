@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { PageHero, Reveal } from '@/components/ui'
+import { LiquidButton } from '@/components/ui/liquid-glass-button'
 
 const CHANNELS = [
-  { icon: '📧', label: 'Email',    value: 'hello@naty.dev',              href: 'mailto:hello@naty.dev',                  bg: 'rgba(124,92,252,0.1)' },
-  { icon: '📸', label: 'Instagram',value: '@naty.dev',                   href: 'https://instagram.com/naty.dev',          bg: 'rgba(245,166,35,0.1)' },
-  { icon: '💼', label: 'LinkedIn', value: 'NATY — Binus University',     href: 'https://linkedin.com/company/naty-dev',   bg: 'rgba(55,138,221,0.1)' },
+  { icon: '📧', label: 'Email',    value: 'hello@naty.dev',              href: 'mailto:hello@naty.dev',                  bg: 'rgba(255,255,255,0.1)'  },
+  { icon: '📸', label: 'Instagram',value: '@naty.dev',                   href: 'https://instagram.com/naty.dev',          bg: 'rgba(255,255,255,0.08)' },
+  { icon: '💼', label: 'LinkedIn', value: 'NATY — Binus University',     href: 'https://linkedin.com/company/naty-dev',   bg: 'rgba(255,255,255,0.06)' },
   { icon: '💻', label: 'GitHub',   value: 'github.com/naty-dev',         href: 'https://github.com/naty-dev',             bg: 'rgba(255,255,255,0.05)' },
 ]
 
@@ -45,8 +46,8 @@ export default function ContactClient() {
   const inputClass = (field: string) =>
     `w-full bg-surface border rounded-sm text-ink font-sans text-[14px] px-4 py-3.5 outline-none transition-all duration-200
      ${errors.includes(field)
-      ? 'border-red/50 shadow-[0_0_0_3px_rgba(226,75,74,0.1)]'
-      : 'border-white/[0.09] focus:border-violet/50 focus:shadow-[0_0_0_3px_rgba(124,92,252,0.1)]'}`
+      ? 'border-red/60 shadow-[0_0_0_3px_rgba(255,255,255,0.12)]'
+      : 'border-white/[0.09] focus:border-violet/50 focus:shadow-[0_0_0_3px_rgba(255,255,255,0.08)]'}`
 
   return (
     <>
@@ -105,20 +106,19 @@ export default function ContactClient() {
                   placeholder="What are you building? What's the deadline? What matters most to you?"
                   value={message} onChange={e => setMessage(e.target.value)} />
               </div>
-              <button onClick={handleSubmit} disabled={loading}
-                className="w-full font-display font-semibold text-[16px] py-4 rounded-sm bg-violet text-white
-                           transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5
-                           hover:shadow-[0_12px_32px_rgba(124,92,252,0.3)]
-                           disabled:opacity-60 disabled:pointer-events-none">
+              <LiquidButton onClick={handleSubmit} disabled={loading} size="xl"
+                className="w-full rounded-full text-white border border-white/20 font-semibold text-[16px] py-4">
                 {loading ? 'Sending...' : 'Send message →'}
-              </button>
+              </LiquidButton>
             </div>
           ) : (
             <div className="text-center py-12 px-8 bg-surface border border-teal/20 rounded-card">
               <div className="text-4xl mb-4">✓</div>
               <h3 className="font-display font-semibold text-[20px] mb-2">Message sent!</h3>
               <p className="text-[14px] text-muted mb-6">We&#39;ll get back to you within 24 hours.</p>
-              <Link href="/works" className="btn-ghost">View our work →</Link>
+              <Link href="/works">
+                <LiquidButton size="lg" className="text-white border border-white/20 font-medium text-[14px]">View our work →</LiquidButton>
+              </Link>
             </div>
           )}
         </Reveal>
