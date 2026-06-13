@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import Groq from 'groq-sdk'
 
 function isAuthorized(req: NextRequest) {
   const pwd = req.headers.get('x-dashboard-password')
@@ -73,11 +73,11 @@ Top repositories:
 ${repoSummary || 'No public repos with descriptions found.'}
   `.trim()
 
-  // OpenAI
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  // Groq — free, no billing required
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+  const completion = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
     max_tokens: 300,
     messages: [
       {
