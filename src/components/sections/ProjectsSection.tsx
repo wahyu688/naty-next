@@ -1,72 +1,228 @@
 'use client'
 import Link from 'next/link'
-import { useRef } from 'react'
-import { useInView } from 'framer-motion'
-import { PROJECTS } from '@/lib/data'
-import { Reveal, SectionHeader, StackPills } from '@/components/ui'
+import { useRef, useState, useEffect } from 'react'
+import clsx from 'clsx'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useLenis } from 'lenis/react'
+import { PROJECTS, type Project } from '@/lib/data'
+import { SectionHeader, StackPills } from '@/components/ui'
+import { VelocitySkew } from '@/components/ui/VelocitySkew'
+import { LiquidButton } from '@/components/ui/liquid-glass-button'
 
-// ── Projects ────────────────────────────────────────────────
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
+
+// ── Single project card ─────────────────────────────────────
+function ProjectCard({ p }: { p: Project }) {
+  return (
+    <div className="h-full flex flex-col rounded-[22px] overflow-hidden border border-white/[0.08] bg-surface">
+      {/* Image — emoji + bg drift horizontally as the card crosses the viewport center */}
+      <div className="relative h-[320px] overflow-hidden shrink-0">
+        <div
+          data-parallax-bg
+          className="absolute -top-[20%] -bottom-[20%] -left-[14%] -right-[14%] will-change-transform"
+          style={{ background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})` }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span data-parallax-fg className="text-[68px] will-change-transform">{p.emoji}</span>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-7 flex-1 flex flex-col">
+        <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-amber mb-2">
+          {p.type}
+        </div>
+        <h3 className="font-display font-bold text-[22px] tracking-[-0.02em] mb-3">{p.name}</h3>
+        <p className="text-[14px] text-muted leading-[1.65] flex-1 mb-6">{p.desc}</p>
+        <StackPills items={p.stack.slice(0, 5)} />
+      </div>
+    </div>
+  )
+}
+
+// ── Projects — scroll-driven horizontal carousel ────────────
 export default function ProjectsSection() {
-  const featured = PROJECTS.find(p => p.featured)
-  const rest = PROJECTS.filter(p => !p.featured).slice(0, 5)
+  const projects = PROJECTS
+  const lenis = useLenis()
+  const sectionRef = useRef<HTMLElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const slotRefs = useRef<(HTMLDivElement | null)[]>([])
+  const viewAllRef = useRef<HTMLDivElement>(null)
+  const stRef = useRef<ScrollTrigger | null>(null)
+  const activeRef = useRef(0)
+  const [active, setActive] = useState(0)
+
+  useEffect(() => {
+    const section = sectionRef.current
+    const stage = stageRef.current
+    const track = trackRef.current
+    if (!section || !stage || !track) return
+
+    const ctx = gsap.context(() => {
+      // Cache the layered elements per card (transform targets never overlap)
+      const slots = slotRefs.current.filter(Boolean) as HTMLDivElement[]
+      const emph = slots.map(s => s.querySelector<HTMLElement>('[data-emph]'))
+      const bg = slots.map(s => s.querySelector<HTMLElement>('[data-parallax-bg]'))
+      const fg = slots.map(s => s.querySelector<HTMLElement>('[data-parallax-fg]'))
+      const firstEntry = slots[0]?.querySelector<HTMLElement>('[data-entry]') ?? null
+      const viewAll = viewAllRef.current
+
+      // Exact translate needed to center the LAST card (layout-based, transform-proof)
+      const getMaxX = () => {
+        const last = slots[slots.length - 1]
+        return last.offsetLeft + last.offsetWidth / 2 - track.clientWidth / 2
+      }
+      // Extra scroll past the last card during which the "View all" button reveals
+      const revealDist = () => Math.min(window.innerHeight * 0.7, 560)
+
+      // Continuous emphasis + horizontal image parallax, driven by each card's
+      // live distance from the viewport center.
+      const render = () => {
+        const viewCenter = window.innerWidth / 2
+        let best = 0
+        let bestDist = Infinity
+        slots.forEach((slot, i) => {
+          const r = slot.getBoundingClientRect()
+          const dist = r.left + r.width / 2 - viewCenter
+          const ad = Math.abs(dist)
+          if (ad < bestDist) { bestDist = ad; best = i }
+          const norm = Math.min(ad / (r.width * 0.9), 1)
+          // center card pops to 1.04, neighbors shrink/dim toward the edges
+          gsap.set(emph[i], { scale: 1.04 - norm * 0.24, autoAlpha: 1 - norm * 0.6 })
+          // layered drift — emoji moves opposite the card, bg trails it (depth)
+          gsap.set(fg[i], { x: dist * -0.07 })
+          gsap.set(bg[i], { x: dist * 0.045 })
+        })
+        if (best !== activeRef.current) { activeRef.current = best; setActive(best) }
+      }
+
+      // Pin the stage and translate the track horizontally with vertical scroll.
+      // Scroll down → progress↑ → track moves left → next card enters from the right.
+      // The final `revealDist` of scroll holds the last card and parallaxes in the CTA.
+      const st = ScrollTrigger.create({
+        trigger: stage,
+        start: 'top top',
+        end: () => '+=' + (getMaxX() + revealDist()),
+        pin: true,
+        scrub: 1,
+        invalidateOnRefresh: true,
+        onRefresh: render,
+        onUpdate: (self) => {
+          const maxX = getMaxX()
+          const dist = self.progress * (maxX + revealDist())
+          // Phase 1: slide the track until the last card is centered, then hold.
+          gsap.set(track, { x: -Math.min(dist, maxX) })
+          // Phase 2: reveal the "View all" CTA with a parallax rise + blur clear.
+          const rp = gsap.utils.clamp(0, 1, (dist - maxX) / revealDist())
+          if (viewAll) {
+            gsap.set(viewAll, {
+              autoAlpha: rp,
+              y: (1 - rp) * 70,
+              scale: 0.92 + rp * 0.08,
+              filter: `blur(${(1 - rp) * 12}px)`,
+            })
+          }
+          render()
+        },
+      })
+      stRef.current = st
+
+      // First card: parallax entrance as you scroll in from the pricing section.
+      if (firstEntry) {
+        gsap.fromTo(
+          firstEntry,
+          { xPercent: 26, autoAlpha: 0.3, filter: 'blur(14px)' },
+          {
+            xPercent: 0, autoAlpha: 1, filter: 'blur(0px)', ease: 'none',
+            scrollTrigger: {
+              trigger: stage,
+              start: 'top bottom',
+              end: 'top top',
+              scrub: true,
+              onUpdate: render,
+            },
+          },
+        )
+      }
+
+      if (viewAll) gsap.set(viewAll, { autoAlpha: 0 })
+      render()
+    }, section)
+
+    return () => ctx.revert()
+  }, [])
+
+  // Dots jump to a card by scrolling the page to where that card is centered.
+  const scrollToIndex = (i: number) => {
+    const st = stRef.current
+    const track = trackRef.current
+    const slot = slotRefs.current[i]
+    if (!st || !track || !slot) return
+    const offset = slot.offsetLeft + slot.offsetWidth / 2 - track.clientWidth / 2
+    const target = st.start + offset
+    if (lenis) lenis.scrollTo(target, { duration: 1 })
+    else window.scrollTo({ top: target, behavior: 'smooth' })
+  }
 
   return (
-    <section id="projects" className="py-[140px] px-6">
+    <section ref={sectionRef} id="projects" className="py-[140px] overflow-hidden">
       <SectionHeader
         label="Our work"
         title="Products, not just projects."
-        sub="We build for real users. Here's a selection of what we've shipped."
+        sub="Scroll to move through our work — each project slides in as you go."
       />
-      <div className="max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {/* Featured */}
-        {featured && (
-          <Reveal className="lg:col-span-2">
-            <div className="card h-full flex flex-col">
-              <div className="h-[240px] flex items-center justify-center text-[72px] relative overflow-hidden"
-                   style={{ background: `linear-gradient(135deg, ${featured.gradientFrom}, ${featured.gradientTo})` }}>
-                {featured.emoji}
-                <span className="absolute top-4 right-4 text-[11px] font-semibold tracking-[0.06em]
-                                 px-3 py-1 rounded-full bg-violet/20 text-violet-soft border border-violet/25">
-                  Shipped
-                </span>
-              </div>
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-amber mb-2">{featured.type}</div>
-                <div className="font-display font-semibold text-[20px] mb-3">{featured.name}</div>
-                <p className="text-[13px] text-muted leading-[1.65] flex-1 mb-5">{featured.desc}</p>
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                  <StackPills items={featured.stack.slice(0, 4)} />
-                  <Link href="/works" className="text-[13px] font-medium text-violet-soft hover:text-ink transition-colors">
-                    Case study →
-                  </Link>
+
+      {/* Pinned horizontal stage */}
+      <div ref={stageRef} className="relative h-screen flex flex-col justify-center overflow-hidden">
+        <div
+          ref={trackRef}
+          className="relative flex gap-8 will-change-transform px-[calc((100vw-min(760px,84vw))/2)]"
+        >
+          {projects.map((p, i) => (
+            <div
+              key={p.id}
+              ref={(el) => { slotRefs.current[i] = el }}
+              data-slot
+              className="shrink-0 w-[min(760px,84vw)]"
+            >
+              <div data-emph className="h-full" style={{ opacity: i === 0 ? 1 : 0.4 }}>
+                <div data-entry className="h-full">
+                  <VelocitySkew className="h-full" maxSkew={5} intensity={0.18}>
+                    <ProjectCard p={p} />
+                  </VelocitySkew>
                 </div>
               </div>
             </div>
-          </Reveal>
-        )}
+          ))}
+        </div>
 
-        {/* Rest */}
-        {rest.map((p, i) => (
-          <Reveal key={p.id} delay={i * 0.05}>
-            <div className="card h-full flex flex-col">
-              <div className="h-[180px] flex items-center justify-center text-[52px]"
-                   style={{ background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})` }}>
-                {p.emoji}
-              </div>
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-amber mb-2">{p.type}</div>
-                <div className="font-display font-semibold text-[16px] mb-2">{p.name}</div>
-                <p className="text-[13px] text-muted leading-[1.65] flex-1 mb-4">{p.desc}</p>
-                <StackPills items={p.stack.slice(0, 3)} />
-              </div>
-            </div>
-          </Reveal>
-        ))}
-      </div>
-      <div className="text-center mt-12">
-        <Reveal>
-          <Link href="/works" className="btn-ghost">View all projects →</Link>
-        </Reveal>
+        {/* Dots — progress + jump */}
+        <div className="flex items-center justify-center gap-2 mt-8">
+          {projects.map((p, i) => (
+            <button
+              key={p.id}
+              onClick={() => scrollToIndex(i)}
+              aria-label={`Go to ${p.name}`}
+              className={clsx(
+                'h-1.5 rounded-full transition-all duration-300',
+                i === active ? 'w-6 bg-ink' : 'w-1.5 bg-white/20 hover:bg-white/40',
+              )}
+            />
+          ))}
+        </div>
+
+        {/* View all — parallaxes in once you reach the last card */}
+        <div ref={viewAllRef} className="text-center mt-8 will-change-transform">
+          <Link href="/works">
+            <LiquidButton size="xl" className="text-white border border-white/20 font-semibold text-[15px]">
+              View all projects →
+            </LiquidButton>
+          </Link>
+        </div>
       </div>
     </section>
   )

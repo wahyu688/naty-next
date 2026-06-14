@@ -1,16 +1,45 @@
 "use client"
 
 import Link from "next/link"
+import { useRef, useEffect } from "react"
 import { motion } from "framer-motion"
+import gsap from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { WebGLShader } from "@/components/ui/web-gl-shader"
 import { LiquidButton } from "@/components/ui/liquid-glass-button"
 
-export default function HeroSection() {
-  return (
-    <section className="relative min-h-screen flex items-center justify-center text-center overflow-hidden">
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger)
+}
 
-      {/* WebGL shader fullscreen background */}
-      <WebGLShader />
+export default function HeroSection() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const bgRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const st = {
+        trigger: sectionRef.current,
+        start: "top top",
+        end: "bottom top",
+        scrub: true,
+      }
+      // Content drifts up + fades as you scroll past the hero (scrubbed)
+      gsap.to(contentRef.current, { yPercent: -22, opacity: 0, ease: "none", scrollTrigger: st })
+      // Background parallax — moves slower / opposite for depth
+      gsap.to(bgRef.current, { yPercent: 18, ease: "none", scrollTrigger: st })
+    }, sectionRef)
+    return () => ctx.revert()
+  }, [])
+
+  return (
+    <section ref={sectionRef} className="relative min-h-screen flex items-center justify-center text-center overflow-hidden">
+
+      {/* WebGL shader fullscreen background — parallax */}
+      <div ref={bgRef} className="absolute left-0 right-0 top-[-14%] h-[128%] z-0 will-change-transform">
+        <WebGLShader />
+      </div>
 
       {/* Dark overlay so text stays readable */}
       <div className="absolute inset-0 bg-gradient-to-b from-bg/60 via-bg/30 to-bg/80 z-[1]" />
@@ -18,25 +47,22 @@ export default function HeroSection() {
       {/* Subtle center glow */}
       <div className="absolute inset-0 z-[1] pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(124,92,252,0.12) 0%, transparent 70%)"
+          background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 70%)"
         }}
       />
 
       {/* Content */}
-      <div className="relative z-[2] max-w-[820px] px-6 pt-[120px] pb-20">
+      <div ref={contentRef} className="relative z-[2] max-w-[820px] px-6 pt-[120px] pb-20 will-change-transform">
 
-        {/* Badge */}
-        <motion.div
+        {/* Eyebrow label */}
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="inline-flex items-center gap-2 text-[12px] font-medium tracking-[0.08em] uppercase
-                     text-violet-soft bg-[rgba(124,92,252,0.13)] border border-[rgba(124,92,252,0.2)]
-                     rounded-full px-4 py-1.5 mb-9"
+          className="text-[12px] font-medium tracking-[0.22em] uppercase text-muted mb-9"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-violet-soft animate-pulse2 inline-block" />
           Computer Science · Binus University
-        </motion.div>
+        </motion.p>
 
         {/* Title */}
         <motion.h1
@@ -48,7 +74,14 @@ export default function HeroSection() {
         >
           We build things
           <br />
-          <span style={{ color: "transparent", WebkitTextStroke: "1.5px #9b7dfd" }}>
+          <span
+            className="font-normal"
+            style={{
+              fontFamily: "var(--font-inter), sans-serif",
+              color: "transparent",
+              WebkitTextStroke: "1.5px rgba(255,255,255,0.35)",
+            }}
+          >
             worth remembering.
           </span>
         </motion.h1>
@@ -73,10 +106,10 @@ export default function HeroSection() {
           className="flex items-center justify-center gap-1.5 mb-10"
         >
           <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
           </span>
-          <p className="text-[12px] text-green-400 font-medium">Available for New Projects</p>
+          <p className="text-[12px] text-ink/70 font-medium">Available for New Projects</p>
         </motion.div>
 
         {/* Actions */}

@@ -15,9 +15,9 @@ const FILTERS = [
 ]
 
 const STATUS_STYLES: Record<string, string> = {
-  live:      'bg-[rgba(93,202,165,0.15)] text-teal border border-teal/25',
-  shipped:   'bg-[rgba(124,92,252,0.13)] text-violet-soft border border-violet/25',
-  wip:       'bg-[rgba(245,166,35,0.1)] text-amber border border-amber/25',
+  live:      'bg-[rgba(255,255,255,0.14)] text-ink border border-white/25',
+  shipped:   'bg-[rgba(255,255,255,0.1)] text-violet-soft border border-white/20',
+  wip:       'bg-[rgba(255,255,255,0.07)] text-violet-soft border border-white/15',
   portfolio: 'bg-surface2 text-muted border border-white/[0.05]',
 }
 

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import HomeIntro from '@/components/sections/HomeIntro'
 import HeroSection from '@/components/sections/HeroSection'
 import AboutSection from '@/components/sections/AboutSection'
+import PricingSection from '@/components/sections/PricingSection'
 import TeamSection from '@/components/sections/TeamSection'
 import ProjectsSection from '@/components/sections/ProjectsSection'
 import SkillsSection from '@/components/sections/SkillsSection'
@@ -20,11 +22,13 @@ const MARQUEE_ITEMS = [
 export default function HomePage() {
   return (
     <>
+      <HomeIntro />
       <HeroSection />
       <Marquee items={MARQUEE_ITEMS} />
       <AboutSection />
-      <TeamSection />
+      <PricingSection />
       <ProjectsSection />
+      <TeamSection />
       <SkillsSection />
       <ContactCTA />
     </>

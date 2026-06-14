@@ -1,8 +1,15 @@
 'use client'
 
-import { motion, useInView } from 'framer-motion'
-import { useRef } from 'react'
+import { useAnimationFrame } from 'framer-motion'
+import { useLenis } from 'lenis/react'
+import { useRef, useEffect } from 'react'
 import clsx from 'clsx'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
 
 // ── Reveal wrapper ────────────────────────────────────
 interface RevealProps {
@@ -10,34 +17,97 @@ interface RevealProps {
   delay?: number
   className?: string
   y?: number
+  /** disable blur-in for large/expensive subtrees */
+  blur?: boolean
+  /**
+   * Tie the reveal to scroll position (scrubbed) instead of a one-shot pop-in.
+   * `true` = scrub:1, or pass a number for a custom scrub smoothing.
+   * Scrubbed reveals are reversible — they play forward/back with the scroll.
+   */
+  scrub?: boolean | number
 }
 
-export function Reveal({ children, delay = 0, className, y = 36 }: RevealProps) {
-  const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '0px 0px -40px 0px' })
+export function Reveal({ children, delay = 0, className, y = 52, blur = true, scrub = false }: RevealProps) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ctx = gsap.context(() => {
+      const fromVars = { autoAlpha: 0, y, filter: blur ? 'blur(16px)' : 'blur(0px)' }
+
+      if (scrub) {
+        // Scrubbed: opacity/y/blur follow scroll progress (reversible)
+        gsap.fromTo(el, fromVars, {
+          autoAlpha: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 90%',
+            end: 'top 55%',
+            scrub: scrub === true ? 1 : scrub,
+          },
+        })
+      } else {
+        // One-shot pop-in
+        gsap.fromTo(el, fromVars, {
+          autoAlpha: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          duration: 1.1,
+          delay,
+          ease: 'expo.out',
+          scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+        })
+      }
+    }, el)
+    return () => ctx.revert()
+  }, [delay, y, blur, scrub])
+
   return (
-    <motion.div
-      ref={ref}
-      className={className}
-      initial={{ opacity: 0, y }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
-    >
+    <div ref={ref} className={className} style={{ visibility: 'hidden' }}>
       {children}
-    </motion.div>
+    </div>
   )
 }
 
-// ── Marquee ───────────────────────────────────────────
+// ── Marquee (scroll-velocity reactive — lenis.dev style) ───
 interface MarqueeProps {
   items: string[]
+  /** base auto-scroll speed in px/frame */
+  baseVelocity?: number
 }
 
-export function Marquee({ items }: MarqueeProps) {
+export function Marquee({ items, baseVelocity = 0.6 }: MarqueeProps) {
   const doubled = [...items, ...items]
+  const trackRef = useRef<HTMLDivElement>(null)
+  const xRef = useRef(0)
+  const velRef = useRef(0)
+
+  // capture live scroll velocity from Lenis
+  useLenis((lenis) => { velRef.current = lenis.velocity })
+
+  useAnimationFrame((_, delta) => {
+    const track = trackRef.current
+    if (!track) return
+    const half = track.scrollWidth / 2 || 1
+    const frames = delta / 16.6667
+    // base drift + boost proportional to scroll velocity
+    const speed = baseVelocity + Math.min(Math.abs(velRef.current), 50) * 0.32
+    xRef.current -= speed * frames
+    // wrap seamlessly
+    if (xRef.current <= -half) xRef.current += half
+    if (xRef.current > 0) xRef.current -= half
+    // skew + scroll direction reaction
+    const skew = Math.max(-14, Math.min(14, velRef.current * 0.35))
+    track.style.transform = `translate3d(${xRef.current}px,0,0) skewX(${skew}deg)`
+  })
+
   return (
     <div className="overflow-hidden border-t border-b border-white/[0.05] py-[18px] bg-surface">
-      <div className="flex gap-16 w-max animate-marquee">
+      <div ref={trackRef} className="flex gap-16 w-max will-change-transform">
         {doubled.map((item, i) => (
           <span
             key={i}
@@ -131,7 +201,7 @@ export function FilterTabs({ tabs, active, onChange }: FilterTabsProps) {
           className={clsx(
             'font-display text-[13px] font-medium px-5 py-2 rounded-full border transition-all duration-200',
             active === tab.value
-              ? 'bg-violet border-violet text-white'
+              ? 'bg-ink border-ink text-bg'
               : 'bg-transparent border-white/[0.09] text-muted hover:text-ink hover:border-white/20',
           )}
         >

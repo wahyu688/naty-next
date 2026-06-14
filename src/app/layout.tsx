@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
-import { Inter, Space_Grotesk } from 'next/font/google'
+import { Inter, Bricolage_Grotesque } from 'next/font/google'
 import '@/styles/globals.css'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import SmoothScroll from '@/components/providers/SmoothScroll'
+import BackToTop from '@/components/ui/BackToTop'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -10,9 +12,9 @@ const inter = Inter({
   display: 'swap',
 })
 
-const spaceGrotesk = Space_Grotesk({
+const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
-  variable: '--font-space-grotesk',
+  variable: '--font-bricolage',
   display: 'swap',
 })
 
@@ -29,12 +31,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={`${inter.variable} ${bricolage.variable}`}>
       <body className="bg-bg text-ink overflow-x-hidden">
-        <div id="progress-bar" className="fixed top-0 left-0 h-[2px] w-0 bg-gradient-to-r from-violet to-amber z-[1000] transition-[width_0.1s_linear]" />
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        <SmoothScroll>
+          <div id="progress-bar" className="fixed top-0 left-0 h-[2px] w-0 bg-gradient-to-r from-muted to-ink z-[1000] transition-[width_0.1s_linear]" />
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+          <BackToTop />
+        </SmoothScroll>
       </body>
     </html>
   )
