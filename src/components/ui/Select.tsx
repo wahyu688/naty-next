@@ -15,10 +15,12 @@ interface SelectProps {
   error?: boolean
 }
 
-/** Custom dropdown with a smooth framer-motion open/close + staggered options. */
 export function Select({ value, onChange, options, placeholder = 'Select…', error }: SelectProps) {
   const [open, setOpen] = useState(false)
+  const [isScrollable, setIsScrollable] = useState(false)
+  const [isAtBottom, setIsAtBottom] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
   const selected = options.find(o => o.value === value && value !== '')
 
   // Close on outside click / Escape
@@ -34,6 +36,22 @@ export function Select({ value, onChange, options, placeholder = 'Select…', er
       document.removeEventListener('mousedown', onClick)
       document.removeEventListener('keydown', onKey)
     }
+  }, [open])
+
+  // Check if list is scrollable after open
+  useEffect(() => {
+    if (!open) return
+    const el = listRef.current
+    if (!el) return
+    const check = () => {
+      const scrollable = el.scrollHeight > el.clientHeight
+      setIsScrollable(scrollable)
+      setIsAtBottom(!scrollable || el.scrollTop + el.clientHeight >= el.scrollHeight - 4)
+    }
+    // Wait for animation to settle
+    const t = setTimeout(check, 60)
+    el.addEventListener('scroll', check)
+    return () => { clearTimeout(t); el.removeEventListener('scroll', check) }
   }, [open])
 
   return (
@@ -73,11 +91,13 @@ export function Select({ value, onChange, options, placeholder = 'Select…', er
                        shadow-[0_18px_44px_rgba(0,0,0,0.5)]"
           >
             <motion.ul
+              ref={listRef}
               role="listbox"
               initial="hidden"
               animate="show"
               variants={{ show: { transition: { staggerChildren: 0.028, delayChildren: 0.03 } } }}
-              className="max-h-[244px] overflow-y-auto py-1.5"
+              data-lenis-prevent
+              className="max-h-[244px] overflow-y-auto overscroll-contain py-1.5 [scrollbar-width:none]"
             >
               {options.map(o => {
                 const active = o.value === value
@@ -104,6 +124,28 @@ export function Select({ value, onChange, options, placeholder = 'Select…', er
                 )
               })}
             </motion.ul>
+
+            {/* Scroll indicator — fade + chevron, hides when at bottom */}
+            <AnimatePresence>
+              {isScrollable && !isAtBottom && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="pointer-events-none absolute bottom-0 left-0 right-0 h-14
+                             bg-gradient-to-t from-surface2 to-transparent
+                             flex items-end justify-center pb-2"
+                >
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-[10px] font-medium tracking-[0.06em] uppercase text-muted/60">scroll</span>
+                    <svg className="w-3.5 h-3.5 text-muted/50 animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
