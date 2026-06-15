@@ -3,22 +3,13 @@
 import { useState, useRef, useEffect } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { TIMELINE, MEMBERS, type TimelineEntry } from '@/lib/data'
+import { TIMELINE, MEMBERS, type TimelineEntry, type Member } from '@/lib/data'
 import { PageHero, Marquee, FilterTabs, Reveal } from '@/components/ui'
 import clsx from 'clsx'
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
 }
-
-const FILTERS = [
-  { value: 'all', label: 'All members' },
-  { value: '0',   label: 'Bhoja'       },
-  { value: '1',   label: 'Member 2'    },
-  { value: '2',   label: 'Member 3'    },
-  { value: '3',   label: 'Member 4'    },
-  { value: '4',   label: 'Member 5'    },
-]
 
 const TYPE_STYLES: Record<string, string> = {
   project:   'bg-[rgba(255,255,255,0.1)] text-ink',
@@ -29,11 +20,16 @@ const TYPE_STYLES: Record<string, string> = {
 
 const MARQUEE = ['2023','2024','2025','Projects','Hackathons','Internships','Coursework','Launches','Awards']
 
-function EntryCard({ entry }: { entry: TimelineEntry }) {
-  const member = entry.member >= 0 ? MEMBERS[entry.member] : null
-  const dotColor = member?.color.accent ?? '#ededed'
-  const badgeBg  = member ? `rgba(${member.color.tint.join(',')},0.15)` : 'rgba(255,255,255,0.1)'
-  const badgeColor= member?.color.glow ?? '#ededed'
+interface TimelineClientProps {
+  timeline?: TimelineEntry[] | null
+  members?:  Member[] | null
+}
+
+function EntryCard({ entry, members }: { entry: TimelineEntry; members: Member[] }) {
+  const member = entry.member >= 0 ? members.find(m => m.id === entry.member) ?? null : null
+  const dotColor  = member?.color.accent ?? '#ededed'
+  const badgeBg   = member ? `rgba(${member.color.tint.join(',')},0.15)` : 'rgba(255,255,255,0.1)'
+  const badgeColor = member?.color.glow ?? '#ededed'
 
   return (
     <div data-card className="relative pl-10 mb-5 group"
@@ -67,25 +63,32 @@ function EntryCard({ entry }: { entry: TimelineEntry }) {
   )
 }
 
-export default function TimelineClient() {
+export default function TimelineClient({ timeline: timelineProp, members: membersProp }: TimelineClientProps) {
+  const timeline = timelineProp ?? TIMELINE
+  const members  = membersProp  ?? MEMBERS
+
+  // Build dynamic filter tabs from members
+  const FILTERS = [
+    { value: 'all', label: 'All members' },
+    ...members.map(m => ({ value: String(m.id), label: m.shortName })),
+  ]
+
   const [filter, setFilter] = useState('all')
-  const years = [...new Set(TIMELINE.map(e => e.year))].sort((a, b) => +b - +a)
+  const years = [...new Set(timeline.map(e => e.year))].sort((a, b) => +b - +a)
 
   const filtered = filter === 'all'
-    ? TIMELINE
-    : TIMELINE.filter(e => String(e.member) === filter || (filter === '0' && e.member === -1))
+    ? timeline
+    : timeline.filter(e => String(e.member) === filter || (filter === '0' && e.member === -1))
 
   const timelineRef = useRef<HTMLDivElement>(null)
   const lineRef = useRef<HTMLDivElement>(null)
   const beamRef = useRef<HTMLDivElement>(null)
 
-  // Re-run on filter change — the list re-renders, so triggers are rebuilt.
   useEffect(() => {
     const container = timelineRef.current
     if (!container) return
 
     const ctx = gsap.context(() => {
-      // 1) Self-drawing line + glowing beam head that travels with scroll
       const drawST = {
         trigger: container,
         start: 'top 78%',
@@ -103,7 +106,6 @@ export default function TimelineClient() {
           { top: '100%', autoAlpha: 1, ease: 'none', scrollTrigger: drawST })
       }
 
-      // 2) Year numbers — parallax drift + dramatic pop-in (separate elements, no conflict)
       gsap.utils.toArray<HTMLElement>('[data-year-drift]').forEach((el) => {
         gsap.to(el, {
           yPercent: -22, ease: 'none',
@@ -118,14 +120,12 @@ export default function TimelineClient() {
         })
       })
 
-      // 3) Cards — slide in from the line with an overshoot
       gsap.utils.toArray<HTMLElement>('[data-card]').forEach((el) => {
         gsap.from(el, {
           x: -56, autoAlpha: 0, rotateZ: -1.5, filter: 'blur(8px)',
           duration: 0.9, ease: 'back.out(1.4)',
           scrollTrigger: { trigger: el, start: 'top 90%' },
         })
-        // 4) Dot punches in (clearProps so the CSS hover-scale keeps working after)
         const dot = el.querySelector('[data-dot]')
         if (dot) {
           gsap.from(dot, {
@@ -154,7 +154,7 @@ export default function TimelineClient() {
         {/* Legend */}
         <Reveal>
           <div className="flex flex-wrap gap-5 p-5 bg-surface border border-white/[0.05] rounded-card mb-12 mt-12">
-            {MEMBERS.map(m => (
+            {members.map(m => (
               <div key={m.id} className="flex items-center gap-2 text-[13px] text-muted">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: m.color.accent }} />
                 {m.shortName} — {m.role.split(' · ')[0]}
@@ -170,12 +170,10 @@ export default function TimelineClient() {
 
         {/* Timeline */}
         <div ref={timelineRef} className="relative mt-12">
-          {/* Vertical line — drawn by scroll */}
           <div
             ref={lineRef}
             className="absolute left-0 top-2 bottom-2 w-px bg-gradient-to-b from-white/[0.04] via-white/[0.16] to-white/[0.04]"
           />
-          {/* Travelling glow head */}
           <div
             ref={beamRef}
             className="absolute left-[-3.5px] w-2 h-2 rounded-full bg-white -translate-y-1/2
@@ -196,7 +194,7 @@ export default function TimelineClient() {
                   </div>
                 </div>
                 {entries.map(e => (
-                  <EntryCard key={e.id} entry={e} />
+                  <EntryCard key={e.id} entry={e} members={members} />
                 ))}
               </div>
             )

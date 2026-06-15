@@ -12,7 +12,21 @@ export const TEAM_COLORS = [
   { accent: '#dcdcdc', glow: '#f0f0f0', tint: [220, 220, 220], label: 'gray-200' },
 ]
 
-export const MEMBERS = [
+export type Member = {
+  id: number
+  initials: string
+  name: string
+  shortName: string
+  role: string
+  bio: string
+  tags: string[]
+  github: string
+  linkedin: string
+  photo_url: string | null
+  color: (typeof TEAM_COLORS)[number]
+}
+
+export const MEMBERS: Member[] = [
   {
     id: 0,
     initials: 'BN',
@@ -23,6 +37,7 @@ export const MEMBERS = [
     tags: ['Figma', 'Vue 3', 'React', 'Unity', 'Tailwind', 'After Effects'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    photo_url: null,
     color: TEAM_COLORS[0],
   },
   {
@@ -35,6 +50,7 @@ export const MEMBERS = [
     tags: ['Node.js', 'Supabase', 'PostgreSQL', 'REST API'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    photo_url: null,
     color: TEAM_COLORS[1],
   },
   {
@@ -47,6 +63,7 @@ export const MEMBERS = [
     tags: ['Python', 'Power BI', 'Pentaho', 'Scikit-learn'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    photo_url: null,
     color: TEAM_COLORS[2],
   },
   {
@@ -59,6 +76,7 @@ export const MEMBERS = [
     tags: ['Kotlin', 'Java', 'Material 3', 'Jetpack'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    photo_url: null,
     color: TEAM_COLORS[3],
   },
   {
@@ -71,6 +89,7 @@ export const MEMBERS = [
     tags: ['Premiere Pro', 'After Effects', 'Photoshop', 'Illustrator'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    photo_url: null,
     color: TEAM_COLORS[4],
   },
 ]
@@ -97,6 +116,7 @@ export interface Project {
   year: string
   role: string
   link?: string
+  preview_url?: string | null
 }
 
 export const PROJECTS: Project[] = [

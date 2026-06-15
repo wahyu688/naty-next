@@ -74,7 +74,7 @@ export default function ContactClient() {
     )
   }, [searchParams])
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const errs: string[] = []
     if (!name.trim()) errs.push('name')
     if (!email.trim()) errs.push('email')
@@ -82,7 +82,19 @@ export default function ContactClient() {
     setErrors(errs)
     if (errs.length) return
     setLoading(true)
-    setTimeout(() => { setSent(true); setLoading(false) }, 1200)
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, message, service, budget, company }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      setSent(true)
+    } catch {
+      setErrors(['submit'])
+    } finally {
+      setLoading(false)
+    }
   }
 
   const inputClass = (field: string) =>

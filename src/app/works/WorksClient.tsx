@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PROJECTS, MEMBERS, type Project } from '@/lib/data'
+import { PROJECTS, MEMBERS, type Project, type Member } from '@/lib/data'
 import { PageHero, Marquee, FilterTabs, Reveal, StackPills } from '@/components/ui'
 import clsx from 'clsx'
 
@@ -22,6 +22,11 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 const MARQUEE = ['Marketplace','AR/XR','Mobile','ML / Data','Location Intel','Dashboard','Sustainability']
+
+interface WorksClientProps {
+  projects?: Project[] | null
+  members?: Member[] | null
+}
 
 function CaseModal({ project, onClose }: { project: Project; onClose: () => void }) {
   return (
@@ -77,11 +82,17 @@ function CaseModal({ project, onClose }: { project: Project; onClose: () => void
   )
 }
 
-export default function WorksClient() {
+export default function WorksClient({ projects: projectsProp, members: membersProp }: WorksClientProps) {
+  const projects = projectsProp ?? PROJECTS
+  const members  = membersProp  ?? MEMBERS
+
   const [filter, setFilter] = useState('all')
   const [selected, setSelected] = useState<Project | null>(null)
 
-  const visible = PROJECTS.filter(p =>
+  // Lookup member by ID (safe fallback to first member)
+  const getMember = (id: number) => members.find(m => m.id === id) ?? members[0]
+
+  const visible = projects.filter(p =>
     filter === 'all' || p.categories.includes(filter as any)
   )
 
@@ -112,9 +123,13 @@ export default function WorksClient() {
                 <div
                   className={clsx('relative flex items-center justify-center overflow-hidden',
                     p.featured ? 'h-[240px] text-[72px]' : 'h-[180px] text-[52px]')}
-                  style={{ background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})` }}
+                  style={p.preview_url ? undefined : { background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})` }}
                 >
-                  {p.emoji}
+                  {p.preview_url
+                    ? <img src={p.preview_url} alt={p.name}
+                        className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
+                    : p.emoji
+                  }
                   <span className={clsx('absolute top-4 right-4 text-[11px] font-semibold tracking-[0.06em] px-3 py-1 rounded-full', STATUS_STYLES[p.status])}>
                     {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
                   </span>
@@ -124,7 +139,7 @@ export default function WorksClient() {
                   <div className="font-display font-semibold text-[17px] mb-2">{p.name}</div>
                   <div className="flex gap-2 flex-wrap mb-3">
                     {p.members.map(mi => {
-                      const m = MEMBERS[mi]
+                      const m = getMember(mi)
                       return (
                         <span key={mi} className="text-[11px] font-medium px-2.5 py-0.5 rounded-full"
                               style={{ background: `rgba(${m.color.tint.join(',')},0.15)`, color: m.color.glow }}>

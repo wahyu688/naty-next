@@ -6,6 +6,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useLenis } from 'lenis/react'
 import { PROJECTS, type Project } from '@/lib/data'
+
 import { SectionHeader, StackPills } from '@/components/ui'
 import { VelocitySkew } from '@/components/ui/VelocitySkew'
 import { LiquidButton } from '@/components/ui/liquid-glass-button'
@@ -18,16 +19,43 @@ if (typeof window !== 'undefined') {
 function ProjectCard({ p }: { p: Project }) {
   return (
     <div className="h-full flex flex-col rounded-[22px] overflow-hidden border border-white/[0.08] bg-surface">
-      {/* Image — emoji + bg drift horizontally as the card crosses the viewport center */}
+      {/* Image area — parallax bg + fg preserved for GSAP */}
       <div className="relative h-[320px] overflow-hidden shrink-0">
-        <div
-          data-parallax-bg
-          className="absolute -top-[20%] -bottom-[20%] -left-[14%] -right-[14%] will-change-transform"
-          style={{ background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})` }}
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span data-parallax-fg className="text-[68px] will-change-transform">{p.emoji}</span>
-        </div>
+        {p.preview_url ? (
+          <>
+            {/* Screenshot with subtle parallax drift */}
+            <div
+              data-parallax-bg
+              className="absolute -top-[10%] -bottom-[10%] -left-[6%] -right-[6%] will-change-transform"
+            >
+              <img
+                src={p.preview_url}
+                alt={p.name}
+                className="w-full h-full object-cover object-top"
+              />
+              {/* Gradient overlay so text below stays readable */}
+              <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-surface to-transparent" />
+            </div>
+            {/* Small emoji badge — still uses parallax-fg slot (subtle counter-drift) */}
+            <div className="absolute top-4 left-4">
+              <span
+                data-parallax-fg
+                className="text-[28px] will-change-transform drop-shadow-lg"
+              >{p.emoji}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div
+              data-parallax-bg
+              className="absolute -top-[20%] -bottom-[20%] -left-[14%] -right-[14%] will-change-transform"
+              style={{ background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})` }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span data-parallax-fg className="text-[68px] will-change-transform">{p.emoji}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Body */}
@@ -44,8 +72,8 @@ function ProjectCard({ p }: { p: Project }) {
 }
 
 // ── Projects — scroll-driven horizontal carousel ────────────
-export default function ProjectsSection() {
-  const projects = PROJECTS
+export default function ProjectsSection({ projects: projectsProp }: { projects?: Project[] | null }) {
+  const projects = projectsProp ?? PROJECTS
   const lenis = useLenis()
   const sectionRef = useRef<HTMLElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)

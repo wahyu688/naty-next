@@ -5,44 +5,41 @@ import { useRef, useEffect } from 'react'
 import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import type { PricingRow } from '@/lib/supabase'
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
 }
 
-const PLANS = [
+const DEFAULT_PLANS: PricingRow[] = [
   {
-    id: 'basic',
-    name: 'Basic Website',
-    price: 'Rp 1 – 2,5 jt',
+    id: 'basic', name: 'Basic Website', price: 'Rp 1 – 2,5 jt',
     tagline: 'Landing pages & company profiles',
     features: ['1–4 static pages', 'Fully responsive', 'Basic SEO setup', 'Contact form'],
+    featured: false, sort_order: 0,
   },
   {
-    id: 'interactive',
-    name: 'Interactive User Website',
-    price: 'Rp 3,5 – 7 jt',
+    id: 'interactive', name: 'Interactive User Website', price: 'Rp 3,5 – 7 jt',
     tagline: 'Dynamic sites built around your users',
     features: ['Auth & user accounts', 'CMS / dashboard', 'Database integration', 'Motion & micro-interactions'],
-    featured: true,
+    featured: true, sort_order: 1,
   },
   {
-    id: 'scale',
-    name: 'Big Users Website',
-    price: 'Rp 10 jt',
+    id: 'scale', name: 'Big Users Website', price: 'Rp 10 jt',
     tagline: 'Engineered to scale for high traffic',
     features: ['Scalable architecture', 'Roles & permissions', 'Payment / API integrations', 'Performance tuning'],
+    featured: false, sort_order: 2,
   },
   {
-    id: 'custom',
-    name: 'Custom',
-    price: 'Rp 3 – 20 jt',
+    id: 'custom', name: 'Custom', price: 'Rp 3 – 20 jt',
     tagline: 'Tailored to your exact scope',
     features: ['Scope on request', 'AR/XR, ML, mobile', 'Full-stack product', 'Dedicated support'],
+    featured: false, sort_order: 3,
   },
 ]
 
-export default function PricingSection() {
+export default function PricingSection({ plans: plansProp }: { plans?: PricingRow[] | null }) {
+  const PLANS = plansProp ?? DEFAULT_PLANS
   const sectionRef = useRef<HTMLElement>(null)
   const headRef = useRef<HTMLDivElement>(null)
   const cardsRef = useRef<HTMLDivElement>(null)

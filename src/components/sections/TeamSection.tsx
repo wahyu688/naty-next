@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useInView } from 'framer-motion'
 import Link from 'next/link'
-import { MEMBERS } from '@/lib/data'
+import { MEMBERS, type Member } from '@/lib/data'
 import { LiquidButton } from '@/components/ui/liquid-glass-button'
 
 // ── Pixel renderer ──────────────────────────────────────────
@@ -65,26 +65,31 @@ function drawPixelPhoto(ctx: CanvasRenderingContext2D, img: HTMLImageElement, W:
   const scale = Math.max(cols / img.width, rows / img.height)
   const sw = img.width * scale, sh = img.height * scale
   oc.drawImage(img, (cols - sw) / 2, (rows - sh) / 2, sw, sh)
-  const data = oc.getImageData(0, 0, cols, rows).data
-  ctx.fillStyle = '#08090d'; ctx.fillRect(0, 0, W, H)
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const i = (row * cols + col) * 4
-      const a = data[i + 3] / 255; if (a < 0.05) continue
-      const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]
-      const tA = 0.25
-      const pr = Math.min(255, Math.round(((lum * (1-tA) + tr * tA * (lum/128)) - 128) * 1.3 + 128))
-      const pg = Math.min(255, Math.round(((lum * (1-tA) + tg * tA * (lum/128)) - 128) * 1.3 + 128))
-      const pb = Math.min(255, Math.round(((lum * (1-tA) + tb * tA * (lum/128)) - 128) * 1.3 + 128))
-      ctx.fillStyle = `rgb(${pr},${pg},${pb})`
-      ctx.fillRect(col * PX, row * PX, PX - 1, PX - 1)
+  try {
+    const data = oc.getImageData(0, 0, cols, rows).data
+    ctx.fillStyle = '#08090d'; ctx.fillRect(0, 0, W, H)
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const i = (row * cols + col) * 4
+        const a = data[i + 3] / 255; if (a < 0.05) continue
+        const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]
+        const tA = 0.25
+        const pr = Math.min(255, Math.round(((lum * (1-tA) + tr * tA * (lum/128)) - 128) * 1.3 + 128))
+        const pg = Math.min(255, Math.round(((lum * (1-tA) + tg * tA * (lum/128)) - 128) * 1.3 + 128))
+        const pb = Math.min(255, Math.round(((lum * (1-tA) + tb * tA * (lum/128)) - 128) * 1.3 + 128))
+        ctx.fillStyle = `rgb(${pr},${pg},${pb})`
+        ctx.fillRect(col * PX, row * PX, PX - 1, PX - 1)
+      }
     }
+  } catch {
+    // CORS or tainted canvas — fall back to placeholder
+    drawPlaceholder(ctx, W, H, tint)
   }
 }
 
 // ── Single member slide ─────────────────────────────────────
 interface MemberSlideProps {
-  member: typeof MEMBERS[0]
+  member: Member
   index: number
   isLast: boolean
 }
@@ -99,6 +104,20 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
   const scanYRef = useRef(0)
   const particlesRef = useRef<Particle[]>([])
   const cacheRef = useRef<ImageData | null>(null)
+
+  // Load photo from Supabase Storage URL when available
+  useEffect(() => {
+    if (!member.photo_url) return
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => {
+      setImg(image)
+      setHasPhoto(true)
+      cacheRef.current = null
+    }
+    image.onerror = () => {} // fall back to pixel placeholder silently
+    image.src = member.photo_url
+  }, [member.photo_url])
 
   const startRender = useCallback(() => {
     const canvas = canvasRef.current
@@ -165,14 +184,6 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
     return () => cancelAnimationFrame(rafRef.current)
   }, [inView, startRender])
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const image = new Image()
-    image.onload = () => { setImg(image); setHasPhoto(true); cacheRef.current = null }
-    image.src = URL.createObjectURL(file)
-  }
-
   // Badge style per member
   const badgeBg = `rgba(${member.color.tint.join(',')},0.15)`
   const badgeColor = member.color.glow
@@ -180,22 +191,6 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
   return (
     <div ref={slideRef} className="relative w-full h-screen overflow-hidden flex items-end">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
-
-      {/* Upload zone */}
-      {!hasPhoto && (
-        <label className="absolute inset-0 z-[5] flex items-center justify-center cursor-pointer group">
-          <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-          <div className="text-center px-8 py-5 border border-dashed border-white/20 rounded-xl
-                          bg-bg/70 backdrop-blur-sm pointer-events-none
-                          group-hover:border-white/40 transition-colors duration-200">
-            <div className="text-3xl mb-2">📷</div>
-            <p className="text-[13px] text-muted">
-              <span className="text-violet-soft font-medium">Upload foto {member.shortName}</span>
-              <br />Akan jadi pixelated background
-            </p>
-          </div>
-        </label>
-      )}
 
       {/* Dark gradient overlay */}
       <div className="absolute inset-0 z-[1]"
@@ -255,7 +250,8 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
 }
 
 // ── Team section ────────────────────────────────────────────
-export default function TeamSection() {
+export default function TeamSection({ members: membersProp }: { members?: Member[] | null }) {
+  const members = membersProp ?? MEMBERS
   const [activeIdx, setActiveIdx] = useState(0)
 
   useEffect(() => {
@@ -274,15 +270,15 @@ export default function TeamSection() {
 
   return (
     <section id="team">
-      {MEMBERS.map((member, i) => (
+      {members.map((member, i) => (
         <div key={member.id} data-slide={i}>
-          <MemberSlide member={member} index={i} isLast={i === MEMBERS.length - 1} />
+          <MemberSlide member={member} index={i} isLast={i === members.length - 1} />
         </div>
       ))}
 
       {/* Side dots */}
       <div className="fixed right-7 top-1/2 -translate-y-1/2 z-[200] flex flex-col gap-2.5">
-        {MEMBERS.map((m, i) => (
+        {members.map((m, i) => (
           <button
             key={i}
             onClick={() => document.querySelector(`[data-slide="${i}"]`)?.scrollIntoView({ behavior: 'smooth' })}

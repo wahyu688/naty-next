@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter, Bricolage_Grotesque } from 'next/font/google'
 import '@/styles/globals.css'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
+import ClientLayout from '@/components/layout/ClientLayout'
 import SmoothScroll from '@/components/providers/SmoothScroll'
-import BackToTop from '@/components/ui/BackToTop'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -35,10 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-bg text-ink overflow-x-hidden">
         <SmoothScroll>
           <div id="progress-bar" className="fixed top-0 left-0 h-[2px] w-0 bg-gradient-to-r from-muted to-ink z-[1000] transition-[width_0.1s_linear]" />
-          <Navbar />
-          <main>{children}</main>
-          <Footer />
-          <BackToTop />
+          <ClientLayout>{children}</ClientLayout>
         </SmoothScroll>
       </body>
     </html>
