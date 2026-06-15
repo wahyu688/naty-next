@@ -162,6 +162,14 @@ export default function ContactClient() {
                 className="w-full rounded-full text-white border border-white/20 font-semibold text-[16px] py-4">
                 {loading ? 'Sending...' : 'Send message →'}
               </LiquidButton>
+              {errors.includes('submit') && (
+                <div className="p-4 bg-red/10 border border-red/25 rounded-sm text-[13px] text-red leading-[1.6]">
+                  ⚠ Gagal mengirim pesan. Coba lagi atau hubungi kami langsung via email di bawah.
+                </div>
+              )}
+              {(errors.includes('name') || errors.includes('email') || errors.includes('message')) && !errors.includes('submit') && (
+                <p className="text-[13px] text-red/80">Lengkapi field yang ditandai merah di atas.</p>
+              )}
             </div>
           ) : (
             <div className="text-center py-12 px-8 bg-surface border border-teal/20 rounded-card">
