@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactLenis, useLenis } from 'lenis/react'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -21,9 +21,19 @@ function GsapLenisSync() {
     if (lenis) ScrollTrigger.refresh()
   }, [lenis])
 
-  // On every route change, recompute trigger positions AFTER the new page's
-  // DOM (and its Reveal triggers) has mounted — this evaluates already-in-view
-  // triggers so above-the-fold reveals fire without needing a scroll.
+  // Kill ALL ScrollTrigger instances synchronously before React commits DOM
+  // mutations on route change. ScrollTrigger's pin feature inserts spacer nodes
+  // into the DOM outside React's fiber tree; if those spacers are still present
+  // when React's reconciler runs removeChild, the parent-child relationship
+  // doesn't match what React expects, throwing "NotFoundError: removeChild".
+  // useLayoutEffect cleanup runs before DOM mutations — guaranteed safe order.
+  useLayoutEffect(() => {
+    return () => {
+      ScrollTrigger.getAll().forEach(st => st.kill())
+    }
+  }, [pathname])
+
+  // After route change, refresh ScrollTrigger for new page triggers.
   useEffect(() => {
     const id = requestAnimationFrame(() => ScrollTrigger.refresh())
     return () => cancelAnimationFrame(id)
