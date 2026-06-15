@@ -1,20 +1,30 @@
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
+# ── 1. Install dependencies ──────────────────────────────────
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Rebuild the source code only when needed
+# ── 2. Build ─────────────────────────────────────────────────
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# NEXT_PUBLIC_* vars must be available at build time so they
+# get inlined into the client bundle. Pass them as build args
+# in Dokploy → Application → Build Args.
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Production image — uses Next.js standalone output
+# ── 3. Production runner ──────────────────────────────────────
 FROM base AS runner
 WORKDIR /app
 
