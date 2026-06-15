@@ -5,6 +5,19 @@ import { TEAM_COLORS } from '@/lib/data'
 import type { MemberRow } from '@/lib/supabase'
 import clsx from 'clsx'
 
+// ─── Message type ────────────────────────────────────────────
+type MessageRow = {
+  id: number
+  name: string
+  email: string
+  company: string | null
+  service: string | null
+  budget: string | null
+  message: string
+  read: boolean
+  created_at: string
+}
+
 // ── TEAM_COLORS accent for each member ─────────────────────
 const ACCENTS = TEAM_COLORS.map(c => c.accent)
 
@@ -579,6 +592,248 @@ function MemberEditor({ member, password, onSaved }: MemberEditorProps) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// INBOX
+// ═══════════════════════════════════════════════════════════
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1) return 'Just now'
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  if (d < 7) return `${d}d ago`
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+function initials(name: string) {
+  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+}
+
+// Deterministic color per sender initial
+const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6']
+function avatarColor(name: string) {
+  const code = name.charCodeAt(0) + (name.charCodeAt(1) || 0)
+  return AVATAR_COLORS[code % AVATAR_COLORS.length]
+}
+
+function InboxPanel({ password }: { password: string }) {
+  const [messages, setMessages] = useState<MessageRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<MessageRow | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch('/api/messages', { headers: { 'x-dashboard-password': password } })
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setMessages(data) })
+      .finally(() => setLoading(false))
+  }, [password])
+
+  const markRead = async (msg: MessageRow) => {
+    if (msg.read) { setSelected(msg); return }
+    await fetch('/api/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': password },
+      body: JSON.stringify({ id: msg.id, read: true }),
+    })
+    const updated = { ...msg, read: true }
+    setMessages(prev => prev.map(m => m.id === msg.id ? updated : m))
+    setSelected(updated)
+  }
+
+  const unread = messages.filter(m => !m.read).length
+
+  return (
+    <div className="bg-surface border border-white/[0.07] rounded-card overflow-hidden"
+         style={{ minHeight: 520 }}>
+      {/* Inbox toolbar */}
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2.5">
+          <svg className="w-4 h-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8l-9 6-9-6M3 8h18v13H3z" />
+          </svg>
+          <span className="font-display font-semibold text-[15px]">Inbox</span>
+          {unread > 0 && (
+            <span className="text-[11px] font-semibold bg-ink text-bg px-2 py-0.5 rounded-full">
+              {unread}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => {
+            setLoading(true)
+            fetch('/api/messages', { headers: { 'x-dashboard-password': password } })
+              .then(r => r.json())
+              .then(data => { if (Array.isArray(data)) setMessages(data) })
+              .finally(() => setLoading(false))
+          }}
+          className="text-[12px] text-muted hover:text-ink transition-colors"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div className="flex" style={{ height: 520 }}>
+        {/* Message list */}
+        <div className={clsx(
+          'flex-shrink-0 border-r border-white/[0.06] overflow-y-auto [scrollbar-width:thin]',
+          selected ? 'hidden sm:block sm:w-[280px] lg:w-[320px]' : 'w-full'
+        )}>
+          {loading && (
+            <div className="p-6 flex flex-col gap-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex gap-3">
+                  <div className="w-9 h-9 rounded-full bg-white/[0.07] flex-shrink-0 animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-white/[0.07] rounded animate-pulse w-2/3" />
+                    <div className="h-3 bg-white/[0.05] rounded animate-pulse w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!loading && messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center px-8 py-16">
+              <div className="w-12 h-12 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-4">
+                <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 8l-9 6-9-6M3 8h18v13H3z" />
+                </svg>
+              </div>
+              <p className="text-[13px] text-muted">No messages yet</p>
+              <p className="text-[12px] text-muted/60 mt-1">Messages from the contact form will appear here</p>
+            </div>
+          )}
+
+          {!loading && messages.map(msg => (
+            <button
+              key={msg.id}
+              onClick={() => markRead(msg)}
+              className={clsx(
+                'w-full text-left px-4 py-3.5 border-b border-white/[0.04] transition-colors duration-150',
+                selected?.id === msg.id
+                  ? 'bg-white/[0.07]'
+                  : 'hover:bg-white/[0.04]'
+              )}
+            >
+              <div className="flex items-start gap-3">
+                {/* Avatar */}
+                <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center
+                                text-[13px] font-bold text-bg"
+                     style={{ background: avatarColor(msg.name) }}>
+                  {initials(msg.name)}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <span className={clsx(
+                      'text-[13px] truncate',
+                      msg.read ? 'text-ink/70 font-medium' : 'text-ink font-bold'
+                    )}>
+                      {msg.name}
+                    </span>
+                    <span className="text-[11px] text-muted flex-shrink-0">{timeAgo(msg.created_at)}</span>
+                  </div>
+                  {msg.service && (
+                    <div className="text-[11px] text-muted/80 mb-0.5 truncate">{msg.service}</div>
+                  )}
+                  <div className="text-[12px] text-muted truncate leading-[1.5]">
+                    {msg.message}
+                  </div>
+                </div>
+
+                {!msg.read && (
+                  <div className="w-2 h-2 rounded-full bg-ink flex-shrink-0 mt-1.5" />
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Detail pane */}
+        {selected ? (
+          <div className="flex-1 overflow-y-auto [scrollbar-width:thin] flex flex-col">
+            {/* Detail header */}
+            <div className="px-6 py-4 border-b border-white/[0.06] flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-display font-bold text-[16px] mb-1">
+                  {selected.service || 'General inquiry'}
+                </h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-bg flex-shrink-0"
+                       style={{ background: avatarColor(selected.name) }}>
+                    {initials(selected.name)}
+                  </div>
+                  <span className="text-[13px] font-medium text-ink">{selected.name}</span>
+                  <span className="text-[12px] text-muted">&lt;{selected.email}&gt;</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-[12px] text-muted">
+                  {new Date(selected.created_at).toLocaleString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                  })}
+                </span>
+                <button
+                  onClick={() => setSelected(null)}
+                  className="sm:hidden w-7 h-7 rounded-full bg-white/[0.06] flex items-center justify-center
+                             text-muted hover:text-ink transition-colors text-lg leading-none"
+                >
+                  ←
+                </button>
+              </div>
+            </div>
+
+            {/* Meta row */}
+            <div className="px-6 py-3 border-b border-white/[0.04] flex flex-wrap gap-4 text-[12px] text-muted">
+              {selected.company && (
+                <span><span className="text-muted/60">From:</span> {selected.company}</span>
+              )}
+              {selected.service && (
+                <span><span className="text-muted/60">Service:</span> {selected.service}</span>
+              )}
+              {selected.budget && (
+                <span><span className="text-muted/60">Budget:</span> {selected.budget}</span>
+              )}
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 flex-1">
+              <p className="text-[14px] text-ink leading-[1.75] whitespace-pre-wrap">{selected.message}</p>
+            </div>
+
+            {/* Reply shortcut */}
+            <div className="px-6 py-4 border-t border-white/[0.06]">
+              <a
+                href={`mailto:${selected.email}?subject=Re: ${selected.service || 'Your inquiry'} — NATY`}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-ink text-bg
+                           font-display font-semibold text-[13px] rounded-sm
+                           hover:opacity-90 transition-opacity"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10l9-7 9 7M5 8v11h5v-6h4v6h5V8" />
+                </svg>
+                Reply via email
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 hidden sm:flex items-center justify-center flex-col text-center px-8">
+            <div className="w-14 h-14 rounded-full bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8l-9 6-9-6M3 8h18v13H3z" />
+              </svg>
+            </div>
+            <p className="text-[13px] text-muted">Select a message to read</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════
 // MAIN DASHBOARD
 // ═══════════════════════════════════════════════════════════
 export default function DashboardClient() {
@@ -586,6 +841,7 @@ export default function DashboardClient() {
   const [members, setMembers] = useState<MemberRow[]>([])
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<number | 'all'>('all')
+  const [section, setSection] = useState<'members' | 'inbox'>('members')
 
   // Load from sessionStorage so password persists on refresh
   useEffect(() => {
@@ -649,88 +905,124 @@ export default function DashboardClient() {
       </div>
 
       <div className="max-w-[1200px] mx-auto px-6 py-10">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-display font-bold text-[28px] tracking-[-0.04em] mb-1">
-            Member Profiles
-          </h1>
-          <p className="text-[14px] text-muted">
-            Edit team member information. Changes are saved to Supabase and reflected live on the portfolio.
-          </p>
-        </div>
 
-        {/* Member tabs */}
-        <div className="flex gap-2 flex-wrap mb-8">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={clsx(
-              'font-display text-[13px] font-medium px-4 py-1.5 rounded-full border transition-all duration-200',
-              activeTab === 'all'
-                ? 'bg-ink border-ink text-bg'
-                : 'bg-transparent border-white/[0.09] text-muted hover:text-ink hover:border-white/20'
-            )}
-          >
-            All members
-          </button>
-          {members.map(m => (
+        {/* Section switcher */}
+        <div className="flex gap-1 mb-8 border-b border-white/[0.06] pb-0">
+          {(['members', 'inbox'] as const).map(s => (
             <button
-              key={m.id}
-              onClick={() => setActiveTab(m.id)}
+              key={s}
+              onClick={() => setSection(s)}
               className={clsx(
-                'font-display text-[13px] font-medium px-4 py-1.5 rounded-full border transition-all duration-200',
-                activeTab === m.id
-                  ? 'text-bg border-transparent'
-                  : 'bg-transparent border-white/[0.09] text-muted hover:text-ink hover:border-white/20'
+                'font-display font-medium text-[14px] px-5 py-3 border-b-2 -mb-px transition-all duration-150 capitalize',
+                section === s
+                  ? 'border-ink text-ink'
+                  : 'border-transparent text-muted hover:text-ink'
               )}
-              style={activeTab === m.id ? { background: ACCENTS[m.id], borderColor: ACCENTS[m.id] } : {}}
             >
-              {m.short_name}
+              {s === 'members' ? 'Members' : 'Inbox'}
             </button>
           ))}
         </div>
 
-        {/* Loading */}
-        {loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-surface border border-white/[0.05] rounded-card h-[480px] animate-pulse" />
-            ))}
-          </div>
+        {/* ── MEMBERS SECTION ── */}
+        {section === 'members' && (
+          <>
+            <div className="mb-8">
+              <h1 className="font-display font-bold text-[28px] tracking-[-0.04em] mb-1">
+                Member Profiles
+              </h1>
+              <p className="text-[14px] text-muted">
+                Edit team member information. Changes are saved to Supabase and reflected live on the portfolio.
+              </p>
+            </div>
+
+            {/* Member filter tabs */}
+            <div className="flex gap-2 flex-wrap mb-8">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={clsx(
+                  'font-display text-[13px] font-medium px-4 py-1.5 rounded-full border transition-all duration-200',
+                  activeTab === 'all'
+                    ? 'bg-ink border-ink text-bg'
+                    : 'bg-transparent border-white/[0.09] text-muted hover:text-ink hover:border-white/20'
+                )}
+              >
+                All members
+              </button>
+              {members.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setActiveTab(m.id)}
+                  className={clsx(
+                    'font-display text-[13px] font-medium px-4 py-1.5 rounded-full border transition-all duration-200',
+                    activeTab === m.id
+                      ? 'text-bg border-transparent'
+                      : 'bg-transparent border-white/[0.09] text-muted hover:text-ink hover:border-white/20'
+                  )}
+                  style={activeTab === m.id ? { background: ACCENTS[m.id], borderColor: ACCENTS[m.id] } : {}}
+                >
+                  {m.short_name}
+                </button>
+              ))}
+            </div>
+
+            {loading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="bg-surface border border-white/[0.05] rounded-card h-[480px] animate-pulse" />
+                ))}
+              </div>
+            )}
+
+            {!loading && (
+              <div className={clsx(
+                'grid gap-5',
+                activeTab === 'all'
+                  ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+                  : 'grid-cols-1 max-w-[560px]'
+              )}>
+                {displayedMembers.map(m => (
+                  <MemberEditor
+                    key={m.id}
+                    member={m}
+                    password={password}
+                    onSaved={updated =>
+                      setMembers(prev => prev.map(p => p.id === updated.id ? updated : p))
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
+            <div className="mt-12 p-5 bg-surface border border-white/[0.05] rounded-card
+                            text-[13px] text-muted flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="font-medium text-ink mb-1">🤖 AI Bio Generation</div>
+                Click <strong className="text-ink">AI Bio</strong> on any member card → enter their GitHub URL → Claude analyzes their repos and generates a professional bio. You can edit before applying.
+              </div>
+              <div className="flex-1">
+                <div className="font-medium text-ink mb-1">💾 Auto-save to Supabase</div>
+                Click <strong className="text-ink">Save changes</strong> to persist to database. The live portfolio at <code className="text-violet-soft">/</code> reads from Supabase on every request.
+              </div>
+            </div>
+          </>
         )}
 
-        {/* Member cards */}
-        {!loading && (
-          <div className={clsx(
-            'grid gap-5',
-            activeTab === 'all'
-              ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
-              : 'grid-cols-1 max-w-[560px]'
-          )}>
-            {displayedMembers.map(m => (
-              <MemberEditor
-                key={m.id}
-                member={m}
-                password={password}
-                onSaved={updated =>
-                  setMembers(prev => prev.map(p => p.id === updated.id ? updated : p))
-                }
-              />
-            ))}
-          </div>
+        {/* ── INBOX SECTION ── */}
+        {section === 'inbox' && (
+          <>
+            <div className="mb-8">
+              <h1 className="font-display font-bold text-[28px] tracking-[-0.04em] mb-1">
+                Inbox
+              </h1>
+              <p className="text-[14px] text-muted">
+                Messages submitted via the contact form.
+              </p>
+            </div>
+            <InboxPanel password={password} />
+          </>
         )}
 
-        {/* Info box */}
-        <div className="mt-12 p-5 bg-surface border border-white/[0.05] rounded-card
-                        text-[13px] text-muted flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="font-medium text-ink mb-1">🤖 AI Bio Generation</div>
-            Click <strong className="text-ink">AI Bio</strong> on any member card → enter their GitHub URL → Claude analyzes their repos and generates a professional bio. You can edit before applying.
-          </div>
-          <div className="flex-1">
-            <div className="font-medium text-ink mb-1">💾 Auto-save to Supabase</div>
-            Click <strong className="text-ink">Save changes</strong> to persist to database. The live portfolio at <code className="text-violet-soft">/</code> reads from Supabase on every request.
-          </div>
-        </div>
       </div>
     </div>
   )
