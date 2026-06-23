@@ -3,8 +3,17 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useInView } from 'framer-motion'
 import Link from 'next/link'
+import clsx from 'clsx'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useLenis } from 'lenis/react'
 import { MEMBERS, type Member } from '@/lib/data'
+import { SectionHeader } from '@/components/ui'
 import { LiquidButton } from '@/components/ui/liquid-glass-button'
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
 
 // ── Pixel renderer ──────────────────────────────────────────
 const PX = 8
@@ -87,23 +96,28 @@ function drawPixelPhoto(ctx: CanvasRenderingContext2D, img: HTMLImageElement, W:
   }
 }
 
-// ── Single member slide ─────────────────────────────────────
-interface MemberSlideProps {
+// ── Single member card (portrait tile in the horizontal track) ──
+interface MemberCardProps {
   member: Member
   index: number
-  isLast: boolean
+  total: number
 }
 
-function MemberSlide({ member, index, isLast }: MemberSlideProps) {
+function MemberCard({ member, index, total }: MemberCardProps) {
   const slideRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const inView = useInView(slideRef, { amount: 0.3 })
+  const inView = useInView(slideRef, { amount: 0.2 })
   const [img, setImg] = useState<HTMLImageElement | null>(null)
   const [hasPhoto, setHasPhoto] = useState(false)
   const rafRef = useRef<number>(0)
   const scanYRef = useRef(0)
   const particlesRef = useRef<Particle[]>([])
   const cacheRef = useRef<ImageData | null>(null)
+  // Hover reveal — cursor position (canvas px), eased strength + position, lens buffer
+  const mouseRef = useRef({ x: 0, y: 0, active: false })
+  const posRef = useRef({ x: 0, y: 0 })
+  const strengthRef = useRef(0)
+  const lensRef = useRef<HTMLCanvasElement | null>(null)
 
   // Load photo from Supabase Storage URL when available
   useEffect(() => {
@@ -143,6 +157,41 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
           cacheRef.current = ctx.getImageData(0, 0, W, H)
         } else { ctx.putImageData(cacheRef.current, 0, 0) }
       } else { drawPlaceholder(ctx, W, H, member.color.tint) }
+
+      // Hover reveal — de-pixelate a feathered disc around the cursor (photos only)
+      const m = mouseRef.current
+      const targetS = m.active ? 1 : 0
+      strengthRef.current += (targetS - strengthRef.current) * 0.12
+      // Snap the lens to the cursor as it starts revealing, then trail it
+      if (strengthRef.current < 0.02 && m.active) { posRef.current.x = m.x; posRef.current.y = m.y }
+      posRef.current.x += (m.x - posRef.current.x) * 0.25
+      posRef.current.y += (m.y - posRef.current.y) * 0.25
+      const s = strengthRef.current
+      if (s > 0.01 && hasPhoto && img) {
+        let lens = lensRef.current
+        if (!lens) { lens = document.createElement('canvas'); lensRef.current = lens }
+        if (lens.width !== W || lens.height !== H) { lens.width = W; lens.height = H }
+        const lc = lens.getContext('2d')!
+        lc.clearRect(0, 0, W, H)
+        // Crisp photo, cover-fit aligned to the same framing as the pixel grid
+        const cols = Math.ceil(W / PX), rows = Math.ceil(H / PX)
+        const cover = Math.max(cols / img.width, rows / img.height)
+        const dw = img.width * cover * PX, dh = img.height * cover * PX
+        lc.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh)
+        // Feathered circular mask centred on the (trailing) cursor
+        const R = Math.max(80, Math.min(W, H) * 0.22)
+        lc.globalCompositeOperation = 'destination-in'
+        const mask = lc.createRadialGradient(posRef.current.x, posRef.current.y, 0, posRef.current.x, posRef.current.y, R)
+        mask.addColorStop(0, 'rgba(0,0,0,1)')
+        mask.addColorStop(0.65, 'rgba(0,0,0,1)')
+        mask.addColorStop(1, 'rgba(0,0,0,0)')
+        lc.fillStyle = mask
+        lc.fillRect(0, 0, W, H)
+        lc.globalCompositeOperation = 'source-over'
+        ctx.globalAlpha = s
+        ctx.drawImage(lens, 0, 0)
+        ctx.globalAlpha = 1
+      }
 
       // Scanline
       const sy = Math.round(scanYRef.current)
@@ -184,43 +233,57 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
     return () => cancelAnimationFrame(rafRef.current)
   }, [inView, startRender])
 
-  // Badge style per member
-  const badgeBg = `rgba(${member.color.tint.join(',')},0.15)`
-  const badgeColor = member.color.glow
-
   return (
-    <div ref={slideRef} className="relative w-full h-screen overflow-hidden flex items-end">
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
+    <div
+      ref={slideRef}
+      onPointerMove={(e) => {
+        const c = canvasRef.current
+        if (!c) return
+        const rect = c.getBoundingClientRect()
+        // Map screen px → canvas px (corrects for emphasis scale + parallax drift)
+        mouseRef.current = {
+          x: (e.clientX - rect.left) * (c.width / rect.width),
+          y: (e.clientY - rect.top) * (c.height / rect.height),
+          active: true,
+        }
+      }}
+      onPointerLeave={() => { mouseRef.current.active = false }}
+      className="relative w-full h-full overflow-hidden rounded-[22px] border border-white/[0.08] flex items-end"
+    >
+      {/* Pixel-portrait canvas — wrapper drifts for subtle parallax */}
+      <div data-canvas-wrap className="absolute -inset-[6%] will-change-transform">
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
+      </div>
 
       {/* Dark gradient overlay */}
       <div className="absolute inset-0 z-[1]"
-        style={{ background: 'linear-gradient(to top, rgba(5,5,10,0.95) 0%, rgba(5,5,10,0.72) 30%, rgba(5,5,10,0.18) 60%, rgba(5,5,10,0.35) 100%), linear-gradient(to right, rgba(5,5,10,0.58) 0%, transparent 50%)' }}
+        style={{ background: 'linear-gradient(to top, rgba(5,5,10,0.96) 0%, rgba(5,5,10,0.74) 32%, rgba(5,5,10,0.18) 62%, rgba(5,5,10,0.34) 100%), linear-gradient(to right, rgba(5,5,10,0.5) 0%, transparent 55%)' }}
       />
 
       {/* Corner number */}
-      <div className="absolute top-[90px] right-[8vw] z-[2] text-right select-none">
+      <div className="absolute top-7 right-7 z-[2] text-right select-none">
         <div className="font-display font-bold leading-[1] tracking-[-0.06em]
-                        text-[clamp(5rem,15vw,12rem)]"
-             style={{ color: 'transparent', WebkitTextStroke: '1px rgba(255,255,255,0.07)' }}>
+                        text-[clamp(3.5rem,10vw,7rem)]"
+             style={{ color: 'transparent', WebkitTextStroke: '1px rgba(255,255,255,0.08)' }}>
           {String(index + 1).padStart(2, '0')}
         </div>
       </div>
 
       {/* Content */}
-      <div className="relative z-[2] px-[8vw] pb-16 max-w-[680px]">
+      <div className="relative z-[2] px-8 pb-9 w-full">
         <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-violet-soft/80 mb-3">
-          {String(index + 1).padStart(2, '0')} / 05 — The Team
+          {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')} — The Team
         </div>
         <h2 className="font-display font-bold leading-[0.95] tracking-[-0.04em] uppercase
-                       text-[clamp(2.8rem,6vw,5rem)] mb-3">
+                       text-[clamp(2rem,4.5vw,3.2rem)] mb-3">
           {member.name.split(' ').slice(0, -1).join(' ')}<br />
           {member.name.split(' ').slice(-1)[0]}
         </h2>
-        <div className="text-[14px] text-amber tracking-[0.04em] mb-5">{member.role}</div>
-        <p className="text-[14px] font-light leading-[1.7] text-ink/60 mb-6 max-w-[52ch]">
+        <div className="text-[13px] text-amber tracking-[0.04em] mb-4">{member.role}</div>
+        <p className="text-[13.5px] font-light leading-[1.7] text-ink/60 mb-5 max-w-[46ch]">
           {member.bio}
         </p>
-        <div className="flex flex-wrap gap-2 mb-7">
+        <div className="flex flex-wrap gap-2 mb-6">
           {member.tags.map(t => (
             <span key={t} className="tag">{t}</span>
           ))}
@@ -234,62 +297,159 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
           </Link>
         </div>
       </div>
-
-      {!isLast && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[3]
-                        flex flex-col items-center gap-1.5 text-muted/50
-                        text-[11px] tracking-[0.08em] uppercase">
-          <svg width="14" height="20" viewBox="0 0 14 20" fill="none">
-            <path d="M7 1v18M1 13l6 6 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          next
-        </div>
-      )}
     </div>
   )
 }
 
-// ── Team section ────────────────────────────────────────────
+// ── Team — scroll-driven horizontal carousel ────────────────
 export default function TeamSection({ members: membersProp }: { members?: Member[] | null }) {
   const members = membersProp ?? MEMBERS
-  const [activeIdx, setActiveIdx] = useState(0)
+  const lenis = useLenis()
+  const sectionRef = useRef<HTMLElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const slotRefs = useRef<(HTMLDivElement | null)[]>([])
+  const stRef = useRef<ScrollTrigger | null>(null)
+  const activeRef = useRef(0)
+  const [active, setActive] = useState(0)
 
   useEffect(() => {
-    const handler = () => {
-      const slides = document.querySelectorAll('[data-slide]')
-      slides.forEach((slide, i) => {
-        const rect = slide.getBoundingClientRect()
-        if (rect.top < window.innerHeight * 0.5 && rect.bottom > window.innerHeight * 0.5) {
-          setActiveIdx(i)
-        }
+    const section = sectionRef.current
+    const stage = stageRef.current
+    const track = trackRef.current
+    if (!section || !stage || !track) return
+
+    const ctx = gsap.context(() => {
+      const slots = slotRefs.current.filter(Boolean) as HTMLDivElement[]
+      const emph = slots.map(s => s.querySelector<HTMLElement>('[data-emph]'))
+      const canvasWrap = slots.map(s => s.querySelector<HTMLElement>('[data-canvas-wrap]'))
+      const firstEntry = slots[0]?.querySelector<HTMLElement>('[data-entry]') ?? null
+
+      // Exact translate needed to center the LAST card (layout-based, transform-proof)
+      const getMaxX = () => {
+        const last = slots[slots.length - 1]
+        return last.offsetLeft + last.offsetWidth / 2 - track.clientWidth / 2
+      }
+
+      // Continuous emphasis + horizontal parallax driven by each card's live
+      // distance from the viewport center.
+      const render = () => {
+        const viewCenter = window.innerWidth / 2
+        let best = 0
+        let bestDist = Infinity
+        slots.forEach((slot, i) => {
+          const r = slot.getBoundingClientRect()
+          const dist = r.left + r.width / 2 - viewCenter
+          const ad = Math.abs(dist)
+          if (ad < bestDist) { bestDist = ad; best = i }
+          const norm = Math.min(ad / (r.width * 0.9), 1)
+          // center card pops, neighbors shrink/dim toward the edges
+          gsap.set(emph[i], { scale: 1.02 - norm * 0.18, autoAlpha: 1 - norm * 0.55 })
+          // pixel-portrait drifts opposite the card travel for depth
+          gsap.set(canvasWrap[i], { x: dist * 0.04 })
+        })
+        if (best !== activeRef.current) { activeRef.current = best; setActive(best) }
+      }
+
+      // Pin the stage and translate the track horizontally with vertical scroll.
+      // Scroll down → progress↑ → track moves left → next member enters from the right.
+      const st = ScrollTrigger.create({
+        trigger: stage,
+        start: 'top top',
+        end: () => '+=' + getMaxX(),
+        pin: true,
+        scrub: 1,
+        invalidateOnRefresh: true,
+        onRefresh: render,
+        onUpdate: (self) => {
+          gsap.set(track, { x: -self.progress * getMaxX() })
+          render()
+        },
       })
-    }
-    window.addEventListener('scroll', handler, { passive: true })
-    return () => window.removeEventListener('scroll', handler)
+      stRef.current = st
+
+      // First card: parallax entrance as you scroll in from the previous section.
+      if (firstEntry) {
+        gsap.fromTo(
+          firstEntry,
+          { xPercent: 26, autoAlpha: 0.3, filter: 'blur(14px)' },
+          {
+            xPercent: 0, autoAlpha: 1, filter: 'blur(0px)', ease: 'none',
+            scrollTrigger: {
+              trigger: stage,
+              start: 'top bottom',
+              end: 'top top',
+              scrub: true,
+              onUpdate: render,
+            },
+          },
+        )
+      }
+
+      render()
+    }, section)
+
+    return () => ctx.revert()
   }, [])
 
-  return (
-    <section id="team">
-      {members.map((member, i) => (
-        <div key={member.id} data-slide={i}>
-          <MemberSlide member={member} index={i} isLast={i === members.length - 1} />
-        </div>
-      ))}
+  // Dots jump to a card by scrolling the page to where that card is centered.
+  const scrollToIndex = (i: number) => {
+    const st = stRef.current
+    const track = trackRef.current
+    const slot = slotRefs.current[i]
+    if (!st || !track || !slot) return
+    const offset = slot.offsetLeft + slot.offsetWidth / 2 - track.clientWidth / 2
+    const target = st.start + offset
+    if (lenis) lenis.scrollTo(target, { duration: 1 })
+    else window.scrollTo({ top: target, behavior: 'smooth' })
+  }
 
-      {/* Side dots */}
-      <div className="fixed right-7 top-1/2 -translate-y-1/2 z-[200] flex flex-col gap-2.5">
-        {members.map((m, i) => (
-          <button
-            key={i}
-            onClick={() => document.querySelector(`[data-slide="${i}"]`)?.scrollIntoView({ behavior: 'smooth' })}
-            className="w-1.5 h-1.5 rounded-full transition-all duration-300"
-            style={{
-              background: i === activeIdx ? m.color.accent : 'rgba(139,138,173,0.5)',
-              transform: i === activeIdx ? 'scale(1.8)' : 'scale(1)',
-            }}
-            aria-label={m.shortName}
-          />
-        ))}
+  return (
+    <section ref={sectionRef} id="team" className="py-[140px] overflow-hidden">
+      <SectionHeader
+        label="Who we are"
+        title="The people behind NATY."
+        sub="Scroll to move through the team — each member slides in as you go."
+      />
+
+      {/* Pinned horizontal stage */}
+      <div ref={stageRef} className="relative h-screen flex flex-col justify-center overflow-hidden">
+        <div
+          ref={trackRef}
+          className="relative flex gap-6 items-center will-change-transform px-[calc((100vw-min(520px,84vw))/2)]"
+        >
+          {members.map((member, i) => (
+            <div
+              key={member.id}
+              ref={(el) => { slotRefs.current[i] = el }}
+              data-slot
+              className="shrink-0 w-[min(520px,84vw)] h-[78vh]"
+            >
+              <div data-emph className="h-full" style={{ opacity: i === 0 ? 1 : 0.4 }}>
+                <div data-entry className="h-full">
+                  <MemberCard member={member} index={i} total={members.length} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Dots — progress + jump */}
+        <div className="flex items-center justify-center gap-2.5 mt-8">
+          {members.map((m, i) => (
+            <button
+              key={m.id}
+              onClick={() => scrollToIndex(i)}
+              aria-label={`Go to ${m.shortName}`}
+              className="rounded-full transition-all duration-300 cursor-pointer"
+              style={{
+                width: i === active ? 22 : 6,
+                height: 6,
+                background: i === active ? m.color.accent : 'rgba(139,138,173,0.45)',
+              }}
+            />
+          ))}
+        </div>
       </div>
     </section>
   )

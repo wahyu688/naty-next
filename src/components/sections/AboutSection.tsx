@@ -77,8 +77,8 @@ export default function AboutSection() {
               className="bg-surface hover:bg-surface2 transition-colors duration-200 p-9"
             >
               <div className="font-display font-bold text-[2.8rem] tracking-[-0.04em] leading-[1]">
-                {s.num.replace(/[+rd]/, '')}
-                <span className="text-violet">{s.num.match(/[+rd]/)?.[0]}</span>
+                {s.num.replace(/[^\d∞]+$/, '')}
+                <span className="text-violet">{s.num.match(/[^\d∞]+$/)?.[0]}</span>
               </div>
               <div className="text-[13px] text-muted mt-2">{s.label}</div>
             </div>
