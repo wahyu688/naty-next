@@ -1,7 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState, useCallback } from 'react'
-import { useInView } from 'framer-motion'
+import { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { MEMBERS, type Member } from '@/lib/data'
 import { LiquidButton } from '@/components/ui/liquid-glass-button'
@@ -33,7 +32,6 @@ function drawPlaceholder(ctx: CanvasRenderingContext2D, W: number, H: number, ti
   grad.addColorStop(0, `rgba(${r},${g},${b},0.12)`)
   grad.addColorStop(1, 'transparent')
   ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H)
-
   const cols = Math.ceil(W / PX), rows = Math.ceil(H / PX)
   for (let gy = 0; gy < rows; gy++) {
     for (let gx = 0; gx < cols; gx++) {
@@ -72,58 +70,52 @@ function drawPixelPhoto(ctx: CanvasRenderingContext2D, img: HTMLImageElement, W:
       for (let col = 0; col < cols; col++) {
         const i = (row * cols + col) * 4
         const a = data[i + 3] / 255; if (a < 0.05) continue
-        const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]
+        const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
         const tA = 0.25
-        const pr = Math.min(255, Math.round(((lum * (1-tA) + tr * tA * (lum/128)) - 128) * 1.3 + 128))
-        const pg = Math.min(255, Math.round(((lum * (1-tA) + tg * tA * (lum/128)) - 128) * 1.3 + 128))
-        const pb = Math.min(255, Math.round(((lum * (1-tA) + tb * tA * (lum/128)) - 128) * 1.3 + 128))
+        const pr = Math.min(255, Math.round(((lum * (1 - tA) + tr * tA * (lum / 128)) - 128) * 1.3 + 128))
+        const pg = Math.min(255, Math.round(((lum * (1 - tA) + tg * tA * (lum / 128)) - 128) * 1.3 + 128))
+        const pb = Math.min(255, Math.round(((lum * (1 - tA) + tb * tA * (lum / 128)) - 128) * 1.3 + 128))
         ctx.fillStyle = `rgb(${pr},${pg},${pb})`
         ctx.fillRect(col * PX, row * PX, PX - 1, PX - 1)
       }
     }
   } catch {
-    // CORS or tainted canvas — fall back to placeholder
     drawPlaceholder(ctx, W, H, tint)
   }
 }
 
-// ── Single member slide ─────────────────────────────────────
-interface MemberSlideProps {
-  member: Member
-  index: number
-  isLast: boolean
-}
-
-function MemberSlide({ member, index, isLast }: MemberSlideProps) {
-  const slideRef = useRef<HTMLDivElement>(null)
+// ── Canvas renderer ─────────────────────────────────────────
+function MemberCanvas({ member }: { member: Member }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const inView = useInView(slideRef, { amount: 0.3 })
-  const [img, setImg] = useState<HTMLImageElement | null>(null)
-  const [hasPhoto, setHasPhoto] = useState(false)
   const rafRef = useRef<number>(0)
   const scanYRef = useRef(0)
   const particlesRef = useRef<Particle[]>([])
   const cacheRef = useRef<ImageData | null>(null)
+  const imgRef = useRef<HTMLImageElement | null>(null)
+  const hasPhotoRef = useRef(false)
+  const memberIdRef = useRef(member.id)
 
-  // Load photo from Supabase Storage URL when available
   useEffect(() => {
+    cacheRef.current = null
+    imgRef.current = null
+    hasPhotoRef.current = false
+    memberIdRef.current = member.id
     if (!member.photo_url) return
     const image = new Image()
     image.crossOrigin = 'anonymous'
     image.onload = () => {
-      setImg(image)
-      setHasPhoto(true)
+      if (memberIdRef.current !== member.id) return
+      imgRef.current = image
+      hasPhotoRef.current = true
       cacheRef.current = null
     }
-    image.onerror = () => {} // fall back to pixel placeholder silently
+    image.onerror = () => {}
     image.src = member.photo_url
-  }, [member.photo_url])
+  }, [member.id, member.photo_url])
 
-  const startRender = useCallback(() => {
+  useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')!
-
     const resize = () => {
       canvas.width = canvas.offsetWidth
       canvas.height = canvas.offsetHeight
@@ -131,29 +123,23 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
       cacheRef.current = null
     }
     resize()
-
+    window.addEventListener('resize', resize)
+    const ctx = canvas.getContext('2d')!
     const frame = () => {
       const W = canvas.offsetWidth, H = canvas.offsetHeight
-      if (canvas.width !== W || canvas.height !== H) { resize() }
+      if (canvas.width !== W || canvas.height !== H) resize()
       ctx.clearRect(0, 0, W, H)
-
-      if (hasPhoto && img) {
+      if (hasPhotoRef.current && imgRef.current) {
         if (!cacheRef.current) {
-          drawPixelPhoto(ctx, img, W, H, member.color.tint)
+          drawPixelPhoto(ctx, imgRef.current, W, H, member.color.tint)
           cacheRef.current = ctx.getImageData(0, 0, W, H)
         } else { ctx.putImageData(cacheRef.current, 0, 0) }
       } else { drawPlaceholder(ctx, W, H, member.color.tint) }
-
-      // Scanline
       const sy = Math.round(scanYRef.current)
       ctx.fillStyle = 'rgba(255,255,255,0.055)'; ctx.fillRect(0, sy, W, 2)
       scanYRef.current = (scanYRef.current + 1.2) % H
-
-      // CRT lines
       ctx.fillStyle = 'rgba(0,0,0,0.07)'
       for (let y = 0; y < H; y += PX * 2) ctx.fillRect(0, y, W, 1)
-
-      // Particles
       for (const p of particlesRef.current) {
         p.x += p.vx; p.y += p.vy; p.life -= p.decay
         if (p.life <= 0 || p.y < -20) {
@@ -167,84 +153,127 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
         ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
       }
       ctx.globalAlpha = 1
-
-      // Vignette
-      const vig = ctx.createRadialGradient(W/2, H/2, H*0.1, W/2, H/2, H*0.85)
+      const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.1, W / 2, H / 2, H * 0.85)
       vig.addColorStop(0, 'transparent'); vig.addColorStop(1, 'rgba(5,5,10,0.5)')
       ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H)
-
       rafRef.current = requestAnimationFrame(frame)
     }
-    frame()
-  }, [hasPhoto, img, member])
+    rafRef.current = requestAnimationFrame(frame)
+    return () => {
+      cancelAnimationFrame(rafRef.current)
+      window.removeEventListener('resize', resize)
+    }
+  }, [member])
 
-  useEffect(() => {
-    if (inView) startRender()
-    else { cancelAnimationFrame(rafRef.current); rafRef.current = 0 }
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [inView, startRender])
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
+}
 
-  // Badge style per member
-  const badgeBg = `rgba(${member.color.tint.join(',')},0.15)`
-  const badgeColor = member.color.glow
-
+// ── Member card ─────────────────────────────────────────────
+function MemberCard({
+  member, index, total, isActive, renderCanvas,
+}: {
+  member: Member
+  index: number
+  total: number
+  isActive: boolean
+  renderCanvas: boolean
+}) {
   return (
-    <div ref={slideRef} className="relative w-full h-screen overflow-hidden flex items-end">
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
+    <div
+      className="relative flex-shrink-0 flex flex-col overflow-hidden rounded-[20px] border"
+      style={{
+        width: '68vw',
+        height: '100%',
+        borderColor: isActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
+        opacity: isActive ? 1 : 0.45,
+        transform: isActive ? 'scale(1)' : 'scale(0.97)',
+        transformOrigin: 'center left',
+        transition: 'opacity 0.4s ease, transform 0.4s ease, border-color 0.4s ease',
+        background: '#0d0d0f',
+      }}
+    >
+      {/* ── Photo area (top 60%) ── */}
+      <div className="relative overflow-hidden" style={{ flex: '0 0 60%' }}>
+        {renderCanvas
+          ? <MemberCanvas member={member} />
+          : <div className="absolute inset-0"
+               style={{ background: `rgba(${member.color.tint.join(',')},0.06)` }} />
+        }
 
-      {/* Dark gradient overlay */}
-      <div className="absolute inset-0 z-[1]"
-        style={{ background: 'linear-gradient(to top, rgba(5,5,10,0.95) 0%, rgba(5,5,10,0.72) 30%, rgba(5,5,10,0.18) 60%, rgba(5,5,10,0.35) 100%), linear-gradient(to right, rgba(5,5,10,0.58) 0%, transparent 50%)' }}
-      />
+        {/* Gradient: darken bottom of photo for name readability */}
+        <div className="absolute inset-0 z-[1]" style={{
+          background: 'linear-gradient(to top, rgba(8,8,12,0.97) 0%, rgba(8,8,12,0.5) 35%, rgba(8,8,12,0.1) 65%, rgba(8,8,12,0.25) 100%)',
+        }} />
 
-      {/* Corner number */}
-      <div className="absolute top-[90px] right-[8vw] z-[2] text-right select-none">
-        <div className="font-display font-bold leading-[1] tracking-[-0.06em]
-                        text-[clamp(5rem,15vw,12rem)]"
-             style={{ color: 'transparent', WebkitTextStroke: '1px rgba(255,255,255,0.07)' }}>
-          {String(index + 1).padStart(2, '0')}
+        {/* Ghost index — top right */}
+        <div className="absolute top-5 right-5 z-[2] select-none">
+          <span
+            className="font-display font-bold leading-[1] tracking-[-0.06em]"
+            style={{
+              fontSize: 'clamp(4rem,9vw,7.5rem)',
+              color: 'transparent',
+              WebkitTextStroke: '1px rgba(255,255,255,0.07)',
+            }}
+          >
+            {String(index + 1).padStart(2, '0')}
+          </span>
+        </div>
+
+        {/* Name — bottom of photo */}
+        <div className="absolute bottom-0 left-0 right-0 z-[2] px-7 pb-6">
+          <h2
+            className="font-display font-bold leading-[0.92] tracking-[-0.04em] uppercase"
+            style={{ fontSize: 'clamp(1.7rem,3.4vw,3rem)' }}
+          >
+            {member.name}
+          </h2>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="relative z-[2] px-[8vw] pb-16 max-w-[680px]">
-        <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-violet-soft/80 mb-3">
-          {String(index + 1).padStart(2, '0')} / 05 — The Team
+      {/* ── Info area (bottom 40%) ── */}
+      <div
+        className="flex flex-col justify-between px-7 py-5"
+        style={{ flex: '0 0 40%', borderTop: '1px solid rgba(255,255,255,0.05)', background: '#111114' }}
+      >
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold tracking-[0.04em] text-amber/80">{member.role}</span>
+            <span className="text-[10px] font-mono text-muted/40 tabular-nums">
+              {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+            </span>
+          </div>
+          <p className="text-[12.5px] font-light leading-[1.75] text-ink/50 line-clamp-3 mb-4">
+            {member.bio}
+          </p>
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {member.tags.map(t => <span key={t} className="tag text-[10.5px]">{t}</span>)}
+          </div>
         </div>
-        <h2 className="font-display font-bold leading-[0.95] tracking-[-0.04em] uppercase
-                       text-[clamp(2.8rem,6vw,5rem)] mb-3">
-          {member.name.split(' ').slice(0, -1).join(' ')}<br />
-          {member.name.split(' ').slice(-1)[0]}
-        </h2>
-        <div className="text-[14px] text-amber tracking-[0.04em] mb-5">{member.role}</div>
-        <p className="text-[14px] font-light leading-[1.7] text-ink/60 mb-6 max-w-[52ch]">
-          {member.bio}
-        </p>
-        <div className="flex flex-wrap gap-2 mb-7">
-          {member.tags.map(t => (
-            <span key={t} className="tag">{t}</span>
-          ))}
-        </div>
-        <div className="flex gap-3">
-          <Link href={member.github}>
-            <LiquidButton size="sm" className="text-white border border-white/20 font-medium">GitHub →</LiquidButton>
-          </Link>
-          <Link href={member.linkedin}>
-            <LiquidButton size="sm" className="text-white border border-white/20 font-medium">LinkedIn →</LiquidButton>
-          </Link>
+
+        {/* Social links */}
+        <div className="flex flex-wrap gap-2">
+          {member.github && (
+            <Link href={member.github} target="_blank" rel="noopener noreferrer">
+              <LiquidButton size="sm" className="text-white border border-white/20 font-medium">GitHub →</LiquidButton>
+            </Link>
+          )}
+          {member.linkedin && (
+            <Link href={member.linkedin} target="_blank" rel="noopener noreferrer">
+              <LiquidButton size="sm" className="text-white border border-white/20 font-medium">LinkedIn →</LiquidButton>
+            </Link>
+          )}
+          {member.cv_url && (
+            <Link href={member.cv_url} target="_blank" rel="noopener noreferrer">
+              <LiquidButton size="sm" className="text-white border border-white/20 font-medium">CV →</LiquidButton>
+            </Link>
+          )}
+          {member.portfolio_url && (
+            <Link href={member.portfolio_url} target="_blank" rel="noopener noreferrer">
+              <LiquidButton size="sm" className="text-white border border-white/20 font-medium">Portfolio →</LiquidButton>
+            </Link>
+          )}
         </div>
       </div>
-
-      {!isLast && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[3]
-                        flex flex-col items-center gap-1.5 text-muted/50
-                        text-[11px] tracking-[0.08em] uppercase">
-          <svg width="14" height="20" viewBox="0 0 14 20" fill="none">
-            <path d="M7 1v18M1 13l6 6 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          next
-        </div>
-      )}
     </div>
   )
 }
@@ -252,44 +281,143 @@ function MemberSlide({ member, index, isLast }: MemberSlideProps) {
 // ── Team section ────────────────────────────────────────────
 export default function TeamSection({ members: membersProp }: { members?: Member[] | null }) {
   const members = membersProp ?? MEMBERS
+  const total = members.length
   const [activeIdx, setActiveIdx] = useState(0)
+  const sectionRef = useRef<HTMLElement>(null)
 
+  // Touchpad horizontal swipe via wheel event (deltaX)
   useEffect(() => {
-    const handler = () => {
-      const slides = document.querySelectorAll('[data-slide]')
-      slides.forEach((slide, i) => {
-        const rect = slide.getBoundingClientRect()
-        if (rect.top < window.innerHeight * 0.5 && rect.bottom > window.innerHeight * 0.5) {
-          setActiveIdx(i)
-        }
-      })
+    const el = sectionRef.current
+    if (!el) return
+
+    // Refs so the handler never has stale closures
+    const accRef = { value: 0 }
+    const cooldownRef = { value: false }
+    const THRESHOLD = 60 // px of accumulated horizontal scroll
+
+    const onWheel = (e: WheelEvent) => {
+      // Ignore when vertical component dominates (user scrolling the page)
+      if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) return
+
+      e.preventDefault() // stop the page from scrolling horizontally
+
+      if (cooldownRef.value) return
+
+      accRef.value += e.deltaX
+
+      if (accRef.value > THRESHOLD) {
+        cooldownRef.value = true
+        accRef.value = 0
+        setActiveIdx(i => Math.min(i + 1, total - 1))
+        setTimeout(() => { cooldownRef.value = false }, 650)
+      } else if (accRef.value < -THRESHOLD) {
+        cooldownRef.value = true
+        accRef.value = 0
+        setActiveIdx(i => Math.max(i - 1, 0))
+        setTimeout(() => { cooldownRef.value = false }, 650)
+      }
     }
-    window.addEventListener('scroll', handler, { passive: true })
-    return () => window.removeEventListener('scroll', handler)
-  }, [])
+
+    // passive: false is required to be able to call preventDefault()
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [total])
+
+  // Keyboard navigation (arrow keys)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') setActiveIdx(i => Math.min(i + 1, total - 1))
+      if (e.key === 'ArrowLeft')  setActiveIdx(i => Math.max(i - 1, 0))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [total])
+
+  const member = members[activeIdx]
 
   return (
-    <section id="team">
-      {members.map((member, i) => (
-        <div key={member.id} data-slide={i}>
-          <MemberSlide member={member} index={i} isLast={i === members.length - 1} />
-        </div>
-      ))}
+    <section ref={sectionRef} id="team" className="relative h-screen overflow-hidden bg-bg select-none">
 
-      {/* Side dots */}
-      <div className="fixed right-7 top-1/2 -translate-y-1/2 z-[200] flex flex-col gap-2.5">
-        {members.map((m, i) => (
-          <button
-            key={i}
-            onClick={() => document.querySelector(`[data-slide="${i}"]`)?.scrollIntoView({ behavior: 'smooth' })}
-            className="w-1.5 h-1.5 rounded-full transition-all duration-300"
-            style={{
-              background: i === activeIdx ? m.color.accent : 'rgba(139,138,173,0.5)',
-              transform: i === activeIdx ? 'scale(1.8)' : 'scale(1)',
-            }}
-            aria-label={m.shortName}
-          />
-        ))}
+      {/* Label */}
+      <div className="absolute top-[88px] left-8 z-[10]">
+        <span className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted/50">
+          The Team
+        </span>
+      </div>
+
+      {/* Cards strip */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div
+          className="absolute flex gap-[2vw]"
+          style={{
+            top: '80px',
+            bottom: '4rem',
+            left: 0,
+            alignItems: 'stretch',
+            transform: `translateX(calc(5vw - ${activeIdx} * 70vw))`,
+            transition: 'transform 0.52s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
+          {members.map((m, i) => (
+            <MemberCard
+              key={m.id}
+              member={m}
+              index={i}
+              total={total}
+              isActive={i === activeIdx}
+              renderCanvas={Math.abs(i - activeIdx) <= 1}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom dots — pill style */}
+      <div className="absolute bottom-5 left-0 right-0 z-[10] flex items-center justify-center gap-4">
+        <div className="flex items-center gap-1.5">
+          {total <= 9
+            ? members.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveIdx(i)}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: i === activeIdx ? '22px' : '6px',
+                    height: '6px',
+                    background: i === activeIdx
+                      ? member.color.accent
+                      : 'rgba(255,255,255,0.18)',
+                  }}
+                  aria-label={members[i].shortName}
+                />
+              ))
+            : (
+              <>
+                {[-2, -1, 0, 1, 2].map(offset => {
+                  const idx = activeIdx + offset
+                  if (idx < 0 || idx >= total) return null
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveIdx(idx)}
+                      className="rounded-full transition-all duration-300"
+                      style={{
+                        width: idx === activeIdx ? '22px' : '6px',
+                        height: '6px',
+                        background: idx === activeIdx
+                          ? member.color.accent
+                          : `rgba(255,255,255,${Math.abs(offset) === 1 ? 0.3 : 0.12})`,
+                      }}
+                      aria-label={members[idx].shortName}
+                    />
+                  )
+                })}
+                <span className="text-[10px] font-mono text-muted/40 ml-1 tabular-nums">
+                  {activeIdx + 1}/{total}
+                </span>
+              </>
+            )
+          }
+        </div>
       </div>
     </section>
   )

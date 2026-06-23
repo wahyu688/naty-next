@@ -283,6 +283,20 @@ function MemberEditor({ member, password, onSaved }: { member: MemberRow; passwo
                 </div>
               ))}
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium tracking-[0.08em] uppercase text-muted mb-1.5">CV URL</label>
+                <input value={form.cv_url ?? ''} onChange={e => set('cv_url', e.target.value || null)}
+                  placeholder="https://drive.google.com/..."
+                  className="w-full bg-bg border border-white/[0.07] rounded-sm px-3 py-2.5 text-[13px] text-ink outline-none focus:border-violet/40 placeholder:text-muted/30" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium tracking-[0.08em] uppercase text-muted mb-1.5">Portfolio URL</label>
+                <input value={form.portfolio_url ?? ''} onChange={e => set('portfolio_url', e.target.value || null)}
+                  placeholder="https://yourportfolio.com"
+                  className="w-full bg-bg border border-white/[0.07] rounded-sm px-3 py-2.5 text-[13px] text-ink outline-none focus:border-violet/40 placeholder:text-muted/30" />
+              </div>
+            </div>
           </div>
           <button onClick={handleSave} disabled={saving}
             className={clsx('mt-5 w-full font-display font-semibold text-[13px] py-3 rounded-sm transition-all duration-200',

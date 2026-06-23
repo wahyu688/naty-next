@@ -68,6 +68,8 @@ export default async function HomePage() {
         tags: row.tags as string[],
         github: row.github as string,
         linkedin: row.linkedin as string,
+        cv_url: (row.cv_url as string | null) ?? null,
+        portfolio_url: (row.portfolio_url as string | null) ?? null,
         photo_url: row.photo_url as string | null,
         color: TEAM_COLORS[i % TEAM_COLORS.length],
       }))

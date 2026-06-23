@@ -22,6 +22,8 @@ export type Member = {
   tags: string[]
   github: string
   linkedin: string
+  cv_url: string | null
+  portfolio_url: string | null
   photo_url: string | null
   color: (typeof TEAM_COLORS)[number]
 }
@@ -37,6 +39,8 @@ export const MEMBERS: Member[] = [
     tags: ['Figma', 'Vue 3', 'React', 'Unity', 'Tailwind', 'After Effects'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv_url: null,
+    portfolio_url: null,
     photo_url: null,
     color: TEAM_COLORS[0],
   },
@@ -50,6 +54,8 @@ export const MEMBERS: Member[] = [
     tags: ['Node.js', 'Supabase', 'PostgreSQL', 'REST API'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv_url: null,
+    portfolio_url: null,
     photo_url: null,
     color: TEAM_COLORS[1],
   },
@@ -63,6 +69,8 @@ export const MEMBERS: Member[] = [
     tags: ['Python', 'Power BI', 'Pentaho', 'Scikit-learn'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv_url: null,
+    portfolio_url: null,
     photo_url: null,
     color: TEAM_COLORS[2],
   },
@@ -76,6 +84,8 @@ export const MEMBERS: Member[] = [
     tags: ['Kotlin', 'Java', 'Material 3', 'Jetpack'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv_url: null,
+    portfolio_url: null,
     photo_url: null,
     color: TEAM_COLORS[3],
   },
@@ -89,6 +99,8 @@ export const MEMBERS: Member[] = [
     tags: ['Premiere Pro', 'After Effects', 'Photoshop', 'Illustrator'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv_url: null,
+    portfolio_url: null,
     photo_url: null,
     color: TEAM_COLORS[4],
   },

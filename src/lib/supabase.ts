@@ -16,16 +16,18 @@ export function getServiceSupabase() {
 }
 
 export type MemberRow = {
-  id:         number
-  name:       string
-  short_name: string
-  role:       string
-  bio:        string
-  tags:       string[]
-  github:     string
-  linkedin:   string
-  photo_url:  string | null
-  updated_at: string
+  id:             number
+  name:           string
+  short_name:     string
+  role:           string
+  bio:            string
+  tags:           string[]
+  github:         string
+  linkedin:       string
+  cv_url:         string | null
+  portfolio_url:  string | null
+  photo_url:      string | null
+  updated_at:     string
 }
 
 export type ProjectRow = {
