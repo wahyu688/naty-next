@@ -987,6 +987,7 @@ function NewTimelineModal({ password, onCreated, onClose }: {
               <option value="2">Member 2</option>
               <option value="3">Member 3</option>
               <option value="4">Member 4</option>
+              <option value="5">Member 5</option>
             </select>
           </div>
 
@@ -1180,7 +1181,7 @@ export default function DashboardClient() {
               ))}
             </div>
             {membersLoading
-              ? <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">{[...Array(5)].map((_, i) => <div key={i} className="bg-surface border border-white/[0.05] rounded-card h-[480px] animate-pulse" />)}</div>
+              ? <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">{[...Array(6)].map((_, i) => <div key={i} className="bg-surface border border-white/[0.05] rounded-card h-[480px] animate-pulse" />)}</div>
               : <div className={clsx('grid gap-5', activeTab === 'all' ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1 max-w-[560px]')}>
                   {displayedMembers.map(m => (
                     <MemberEditor key={m.id} member={m} password={password}

@@ -10,7 +10,7 @@ if (typeof window !== 'undefined') {
 }
 
 const STATS = [
-  { num: '5+', label: 'Team members' },
+  { num: '6+', label: 'Team members' },
   { num: '12+', label: 'Projects shipped' },
   { num: '3rd', label: 'Year of study' },
   { num: '∞', label: 'Cups of coffee' },
@@ -58,7 +58,7 @@ export default function AboutSection() {
           </h2>
           <p className="text-[16px] font-light text-muted leading-[1.75] max-w-[60ch]">
             <strong className="text-ink font-medium">NATY</strong> (derived from{' '}
-            <em>Nusantara</em>) is a five-person software house run by CS students at Binus
+            <em>Nusantara</em>) is a six-person software house run by CS students at Binus
             University, Jakarta. We design, develop, and deliver — from prototypes to production.
             <br /><br />
             We&#39;re not just students finishing assignments. We ship real products, take on real

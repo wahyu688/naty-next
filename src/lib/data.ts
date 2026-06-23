@@ -10,6 +10,7 @@ export const TEAM_COLORS = [
   { accent: '#a8a8a8', glow: '#c4c4c4', tint: [168, 168, 168], label: 'gray-400' },
   { accent: '#888888', glow: '#a6a6a6', tint: [136, 136, 136], label: 'gray-500' },
   { accent: '#dcdcdc', glow: '#f0f0f0', tint: [220, 220, 220], label: 'gray-200' },
+  { accent: '#707070', glow: '#999999', tint: [112, 112, 112], label: 'gray-600' },
 ]
 
 export type Member = {
@@ -91,6 +92,19 @@ export const MEMBERS: Member[] = [
     linkedin: 'https://linkedin.com/in/',
     photo_url: null,
     color: TEAM_COLORS[4],
+  },
+  {
+    id: 5,
+    initials: 'M6',
+    name: 'Member Six',
+    shortName: 'Member 6',
+    role: 'DevOps · Cloud Architecture · Security',
+    bio: 'Automates deployments and secures the infrastructure. Configures CI/CD pipelines, Docker containers, and manages cloud services so that the software stays resilient and scaling is seamless.',
+    tags: ['Docker', 'AWS', 'GitHub Actions', 'CI/CD', 'Linux', 'Nginx'],
+    github: 'https://github.com/',
+    linkedin: 'https://linkedin.com/in/',
+    photo_url: null,
+    color: TEAM_COLORS[5],
   },
 ]
 
@@ -240,7 +254,7 @@ export interface TimelineEntry {
   type: TimelineType
   title: string
   desc: string
-  member: number  // 0-4, -1 for team-wide
+  member: number  // 0-5, -1 for team-wide
 }
 
 export const TIMELINE: TimelineEntry[] = [

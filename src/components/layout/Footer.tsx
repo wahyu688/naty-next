@@ -37,7 +37,7 @@ export default function Footer() {
           <div>
             <img src="/logo.svg" alt="NATY" className="h-10 w-auto mb-5" />
             <p className="text-[14px] font-light text-muted leading-[1.7] max-w-[34ch] mb-6">
-              A five-person software house run by CS students at Binus University, Jakarta.
+              A six-person software house run by CS students at Binus University, Jakarta.
               We design, develop, and ship real products.
             </p>
             <div className="inline-flex items-center gap-2.5 px-3.5 py-2 bg-bg border border-white/[0.06] rounded-full">

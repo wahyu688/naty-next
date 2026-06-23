@@ -94,7 +94,7 @@ export default function HeroSection() {
           className="text-[clamp(1rem,2.5vw,1.15rem)] font-light text-ink/60 leading-[1.7]
                      max-w-[540px] mx-auto mb-3"
         >
-          Five CS students from Binus University, shaping ideas into digital products —
+          Six CS students from Binus University, shaping ideas into digital products —
           across design, development, and everything in between.
         </motion.p>
 

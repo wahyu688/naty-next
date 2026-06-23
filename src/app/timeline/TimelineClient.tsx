@@ -146,7 +146,7 @@ export default function TimelineClient({ timeline: timelineProp, members: member
       <PageHero
         label="Our journey"
         title={<>How we got<br /><span className="outline-text">here.</span></>}
-        sub="Milestones, projects, and turning points — the full story of five people becoming one team."
+        sub="Milestones, projects, and turning points — the full story of six people becoming one team."
       />
       <Marquee items={MARQUEE} />
 
