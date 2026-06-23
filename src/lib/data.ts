@@ -10,6 +10,7 @@ export const TEAM_COLORS = [
   { accent: '#a8a8a8', glow: '#c4c4c4', tint: [168, 168, 168], label: 'gray-400' },
   { accent: '#888888', glow: '#a6a6a6', tint: [136, 136, 136], label: 'gray-500' },
   { accent: '#dcdcdc', glow: '#f0f0f0', tint: [220, 220, 220], label: 'gray-200' },
+  { accent: '#b0b0b0', glow: '#d0d0d0', tint: [176, 176, 176], label: 'gray-350' },
 ]
 
 export type Member = {
@@ -22,6 +23,8 @@ export type Member = {
   tags: string[]
   github: string
   linkedin: string
+  cv: string | null
+  portfolio: string | null
   photo_url: string | null
   color: (typeof TEAM_COLORS)[number]
 }
@@ -37,6 +40,8 @@ export const MEMBERS: Member[] = [
     tags: ['Figma', 'Vue 3', 'React', 'Unity', 'Tailwind', 'After Effects'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv: null,
+    portfolio: null,
     photo_url: null,
     color: TEAM_COLORS[0],
   },
@@ -50,6 +55,8 @@ export const MEMBERS: Member[] = [
     tags: ['Node.js', 'Supabase', 'PostgreSQL', 'REST API'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv: null,
+    portfolio: null,
     photo_url: null,
     color: TEAM_COLORS[1],
   },
@@ -63,6 +70,8 @@ export const MEMBERS: Member[] = [
     tags: ['Python', 'Power BI', 'Pentaho', 'Scikit-learn'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv: null,
+    portfolio: null,
     photo_url: null,
     color: TEAM_COLORS[2],
   },
@@ -76,6 +85,8 @@ export const MEMBERS: Member[] = [
     tags: ['Kotlin', 'Java', 'Material 3', 'Jetpack'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv: null,
+    portfolio: null,
     photo_url: null,
     color: TEAM_COLORS[3],
   },
@@ -89,8 +100,25 @@ export const MEMBERS: Member[] = [
     tags: ['Premiere Pro', 'After Effects', 'Photoshop', 'Illustrator'],
     github: 'https://github.com/',
     linkedin: 'https://linkedin.com/in/',
+    cv: null,
+    portfolio: null,
     photo_url: null,
     color: TEAM_COLORS[4],
+  },
+  {
+    id: 5,
+    initials: 'M6',
+    name: 'Member Six',
+    shortName: 'Member 6',
+    role: 'Role · Specialization',
+    bio: 'Describe this member\'s contribution to the team. Their expertise, focus area, and what makes them unique in the group.',
+    tags: ['Skill 1', 'Skill 2', 'Skill 3'],
+    github: 'https://github.com/',
+    linkedin: 'https://linkedin.com/in/',
+    cv: null,
+    portfolio: null,
+    photo_url: null,
+    color: TEAM_COLORS[5],
   },
 ]
 
