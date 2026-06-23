@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { PROJECTS, MEMBERS, type Project, type Member } from '@/lib/data'
 import { PageHero, Marquee, FilterTabs, Reveal, StackPills } from '@/components/ui'
+import { ProjectModal } from '@/components/ui/ProjectModal'
 import clsx from 'clsx'
 
 const FILTERS = [
@@ -26,60 +27,6 @@ const MARQUEE = ['Marketplace','AR/XR','Mobile','ML / Data','Location Intel','Da
 interface WorksClientProps {
   projects?: Project[] | null
   members?: Member[] | null
-}
-
-function CaseModal({ project, onClose }: { project: Project; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 md:p-10
-                    bg-bg/85 backdrop-blur-xl"
-         onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-surface border border-white/[0.09] rounded-[20px] w-full max-w-[720px]
-                      max-h-[85vh] overflow-y-auto [scrollbar-width:none]">
-        <div className="flex items-start justify-between gap-4 p-8 pb-0">
-          <div>
-            <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-amber mb-1">{project.type}</div>
-            <h3 className="font-display font-bold text-[26px] tracking-[-0.03em]">{project.name}</h3>
-          </div>
-          <button onClick={onClose}
-            className="w-9 h-9 rounded-full bg-surface2 border border-white/[0.05]
-                       text-muted text-lg flex items-center justify-center flex-shrink-0
-                       hover:text-ink hover:bg-white/[0.09] transition-colors duration-200">
-            ×
-          </button>
-        </div>
-        <div className="p-8 space-y-6">
-          <div>
-            <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-violet-soft mb-2">Overview</div>
-            <p className="text-[14px] text-muted leading-[1.75]">{project.overview}</p>
-          </div>
-          <div className="h-px bg-white/[0.05]" />
-          <div>
-            <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-violet-soft mb-2">The challenge</div>
-            <p className="text-[14px] text-muted leading-[1.75]">{project.challenge}</p>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-violet-soft mb-2">The solution</div>
-            <p className="text-[14px] text-muted leading-[1.75]">{project.solution}</p>
-          </div>
-          <div className="h-px bg-white/[0.05]" />
-          <div className="flex flex-wrap gap-8">
-            <div className="flex-1">
-              <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-violet-soft mb-2">Stack</div>
-              <StackPills items={project.stack} />
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-violet-soft mb-2">Role</div>
-              <p className="text-[14px] text-muted">{project.role}</p>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-violet-soft mb-2">Year</div>
-              <p className="text-[14px] text-muted">{project.year}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 export default function WorksClient({ projects: projectsProp, members: membersProp }: WorksClientProps) {
@@ -160,7 +107,7 @@ export default function WorksClient({ projects: projectsProp, members: membersPr
         </div>
       </div>
 
-      {selected && <CaseModal project={selected} onClose={() => setSelected(null)} />}
+      {selected && <ProjectModal project={selected} members={members} onClose={() => setSelected(null)} />}
     </>
   )
 }

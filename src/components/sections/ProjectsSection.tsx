@@ -8,6 +8,7 @@ import { useLenis } from 'lenis/react'
 import { PROJECTS, type Project } from '@/lib/data'
 
 import { SectionHeader, StackPills } from '@/components/ui'
+import { ProjectModal } from '@/components/ui/ProjectModal'
 import { VelocitySkew } from '@/components/ui/VelocitySkew'
 import { LiquidButton } from '@/components/ui/liquid-glass-button'
 
@@ -16,9 +17,14 @@ if (typeof window !== 'undefined') {
 }
 
 // ── Single project card ─────────────────────────────────────
-function ProjectCard({ p }: { p: Project }) {
+function ProjectCard({ p, onOpen }: { p: Project; onOpen: () => void }) {
   return (
-    <div className="h-full flex flex-col rounded-[22px] overflow-hidden border border-white/[0.08] bg-surface">
+    <div
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
+      className="group h-full flex flex-col rounded-[22px] overflow-hidden border border-white/[0.08] bg-surface cursor-pointer transition-colors duration-300 hover:border-white/20">
       {/* Image area — parallax bg + fg preserved for GSAP */}
       <div className="relative h-[320px] overflow-hidden shrink-0">
         {p.preview_url ? (
@@ -65,7 +71,12 @@ function ProjectCard({ p }: { p: Project }) {
         </div>
         <h3 className="font-display font-bold text-[22px] tracking-[-0.02em] mb-3">{p.name}</h3>
         <p className="text-[14px] text-muted leading-[1.65] flex-1 mb-6">{p.desc}</p>
-        <StackPills items={p.stack.slice(0, 5)} />
+        <div className="flex items-center justify-between gap-3">
+          <StackPills items={p.stack.slice(0, 4)} />
+          <span className="text-[13px] font-medium text-violet-soft whitespace-nowrap transition-transform duration-300 group-hover:translate-x-1">
+            View details →
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -83,6 +94,7 @@ export default function ProjectsSection({ projects: projectsProp }: { projects?:
   const stRef = useRef<ScrollTrigger | null>(null)
   const activeRef = useRef(0)
   const [active, setActive] = useState(0)
+  const [selected, setSelected] = useState<Project | null>(null)
 
   useEffect(() => {
     const section = sectionRef.current
@@ -220,7 +232,7 @@ export default function ProjectsSection({ projects: projectsProp }: { projects?:
               <div data-emph className="h-full" style={{ opacity: i === 0 ? 1 : 0.4 }}>
                 <div data-entry className="h-full">
                   <VelocitySkew className="h-full" maxSkew={5} intensity={0.18}>
-                    <ProjectCard p={p} />
+                    <ProjectCard p={p} onOpen={() => setSelected(p)} />
                   </VelocitySkew>
                 </div>
               </div>
@@ -252,6 +264,8 @@ export default function ProjectsSection({ projects: projectsProp }: { projects?:
           </Link>
         </div>
       </div>
+
+      {selected && <ProjectModal project={selected} onClose={() => setSelected(null)} />}
     </section>
   )
 }

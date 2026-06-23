@@ -117,6 +117,8 @@ export interface Project {
   role: string
   link?: string
   preview_url?: string | null
+  /** Extra screenshots shown in the project detail modal (beyond preview_url). */
+  gallery?: string[]
 }
 
 export const PROJECTS: Project[] = [
