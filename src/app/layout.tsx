@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   title: { default: 'NATY — CS Portfolio', template: '%s — NATY' },
   description: 'Five CS students from Binus University building real digital products across design, development, and everything in between.',
   keywords: ['NATY', 'portfolio', 'CS', 'Binus University', 'UI/UX', 'frontend', 'AR', 'Jakarta'],
+  icons: {
+    icon: '/logoN.svg',
+    shortcut: '/logoN.svg',
+    apple: '/logoN.svg',
+  },
   openGraph: {
     title: 'NATY — CS Portfolio',
     description: 'Five CS students from Binus University shaping ideas into digital products.',

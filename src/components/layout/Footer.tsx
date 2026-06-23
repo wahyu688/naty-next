@@ -34,7 +34,7 @@ export default function Footer() {
 
           {/* Brand */}
           <div>
-            <img src="/logo.svg" alt="NATY" className="h-10 w-auto mb-5" />
+            <img src="/logo.svg" alt="NATY" className="h-20 w-auto mb-6" />
             <p className="text-[14px] font-light text-muted leading-[1.7] max-w-[34ch] mb-6">
               A five-person software house run by CS students at Binus University, Jakarta.
               We design, develop, and ship real products.
@@ -46,7 +46,7 @@ export default function Footer() {
           </div>
 
           {/* Navigate */}
-          <div>
+          <div className="lg:pt-3">
             <span className="section-label">Navigate</span>
             <ul className="flex flex-col gap-3 list-none">
               {NAV.map(l => (
@@ -60,7 +60,7 @@ export default function Footer() {
           </div>
 
           {/* Services */}
-          <div>
+          <div className="lg:pt-3">
             <span className="section-label">Services</span>
             <ul className="flex flex-col gap-3 list-none">
               {SERVICES.map(l => (
@@ -74,7 +74,7 @@ export default function Footer() {
           </div>
 
           {/* Connect */}
-          <div>
+          <div className="lg:pt-3">
             <span className="section-label">Connect</span>
             <ul className="flex flex-col gap-3 list-none">
               {SOCIAL.map(s => (
@@ -109,16 +109,6 @@ export default function Footer() {
             </span>
           </button>
         </div>
-      </div>
-
-      {/* ── Oversized brand wordmark ── */}
-      <div
-        aria-hidden
-        className="select-none pointer-events-none font-display font-bold tracking-[-0.05em] leading-[0.8]
-                   text-center whitespace-nowrap outline-text
-                   text-[clamp(5rem,22vw,18rem)] -mb-[0.12em]"
-      >
-        NATY
       </div>
     </footer>
   )
