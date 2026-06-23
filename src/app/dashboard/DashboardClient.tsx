@@ -283,6 +283,20 @@ function MemberEditor({ member, password, onSaved }: { member: MemberRow; passwo
                 </div>
               ))}
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium tracking-[0.08em] uppercase text-muted mb-1.5">CV (URL)</label>
+                <input value={form.cv ?? ''} onChange={e => set('cv', e.target.value || null)}
+                  placeholder="https://drive.google.com/..."
+                  className="w-full bg-bg border border-white/[0.07] rounded-sm px-3 py-2.5 text-[13px] text-ink outline-none focus:border-violet/40 placeholder:text-muted/40" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium tracking-[0.08em] uppercase text-muted mb-1.5">Portfolio (URL)</label>
+                <input value={form.portfolio ?? ''} onChange={e => set('portfolio', e.target.value || null)}
+                  placeholder="https://behance.net/... atau drive/notion"
+                  className="w-full bg-bg border border-white/[0.07] rounded-sm px-3 py-2.5 text-[13px] text-ink outline-none focus:border-violet/40 placeholder:text-muted/40" />
+              </div>
+            </div>
           </div>
           <button onClick={handleSave} disabled={saving}
             className={clsx('mt-5 w-full font-display font-semibold text-[13px] py-3 rounded-sm transition-all duration-200',
@@ -987,6 +1001,7 @@ function NewTimelineModal({ password, onCreated, onClose }: {
               <option value="2">Member 2</option>
               <option value="3">Member 3</option>
               <option value="4">Member 4</option>
+              <option value="5">Member 5</option>
             </select>
           </div>
 

@@ -288,13 +288,27 @@ function MemberCard({ member, index, total }: MemberCardProps) {
             <span key={t} className="tag">{t}</span>
           ))}
         </div>
-        <div className="flex gap-3">
-          <Link href={member.github}>
-            <LiquidButton size="sm" className="text-white border border-white/20 font-medium">GitHub →</LiquidButton>
-          </Link>
-          <Link href={member.linkedin}>
-            <LiquidButton size="sm" className="text-white border border-white/20 font-medium">LinkedIn →</LiquidButton>
-          </Link>
+        <div className="flex flex-wrap gap-2">
+          {member.github && (
+            <Link href={member.github} target="_blank" rel="noopener noreferrer">
+              <LiquidButton size="sm" className="text-white border border-white/20 font-medium">GitHub →</LiquidButton>
+            </Link>
+          )}
+          {member.linkedin && (
+            <Link href={member.linkedin} target="_blank" rel="noopener noreferrer">
+              <LiquidButton size="sm" className="text-white border border-white/20 font-medium">LinkedIn →</LiquidButton>
+            </Link>
+          )}
+          {member.cv && (
+            <Link href={member.cv} target="_blank" rel="noopener noreferrer">
+              <LiquidButton size="sm" className="text-white border border-white/20 font-medium">CV →</LiquidButton>
+            </Link>
+          )}
+          {member.portfolio && (
+            <Link href={member.portfolio} target="_blank" rel="noopener noreferrer">
+              <LiquidButton size="sm" className="text-white border border-white/20 font-medium">Portfolio →</LiquidButton>
+            </Link>
+          )}
         </div>
       </div>
     </div>

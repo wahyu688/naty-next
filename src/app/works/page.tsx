@@ -34,7 +34,10 @@ export default async function WorksPage() {
         name: row.name as string, shortName: row.short_name as string,
         role: row.role as string, bio: row.bio as string,
         tags: row.tags as string[], github: row.github as string,
-        linkedin: row.linkedin as string, photo_url: row.photo_url as string | null,
+        linkedin: row.linkedin as string,
+        cv: (row.cv as string | null) ?? null,
+        portfolio: (row.portfolio as string | null) ?? null,
+        photo_url: row.photo_url as string | null,
         color: TEAM_COLORS[i % TEAM_COLORS.length],
       }))
     : null

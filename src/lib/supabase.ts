@@ -24,6 +24,8 @@ export type MemberRow = {
   tags:       string[]
   github:     string
   linkedin:   string
+  cv:         string | null
+  portfolio:  string | null
   photo_url:  string | null
   updated_at: string
 }
