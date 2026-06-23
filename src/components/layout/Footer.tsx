@@ -17,10 +17,9 @@ const SERVICES = [
 ]
 
 const SOCIAL = [
-  { label: 'Email',     value: 'hello@naty.dev',  href: 'mailto:hello@naty.dev' },
-  { label: 'Instagram', value: '@naty.dev',       href: 'https://instagram.com/naty.dev' },
-  { label: 'LinkedIn',  value: 'NATY',            href: 'https://linkedin.com/company/naty-dev' },
-  { label: 'GitHub',    value: 'naty-dev',        href: 'https://github.com/naty-dev' },
+  { label: 'Email',     value: 'nusantaratechnology@natynext.com', href: 'mailto:nusantaratechnology@natynext.com' },
+  { label: 'Instagram', value: '@nusantaratech.house',             href: 'https://www.instagram.com/nusantaratech.house/' },
+  { label: 'LinkedIn',  value: 'Nusantara Technology',             href: 'https://www.linkedin.com/in/nusantara-technology-227b62416/' },
 ]
 
 export default function Footer() {

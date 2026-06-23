@@ -7,7 +7,7 @@ import { PageHero, Reveal } from '@/components/ui'
 import { LiquidButton } from '@/components/ui/liquid-glass-button'
 import { Select, type SelectOption } from '@/components/ui/Select'
 import {
-  MailIcon, InstagramIcon, LinkedInIcon, GithubIcon, ArrowRightIcon, CheckIcon,
+  MailIcon, InstagramIcon, LinkedInIcon, ArrowRightIcon, CheckIcon,
   PaletteIcon, CodeIcon, DeviceIcon, CubeIcon, ChipIcon, PlayIcon,
 } from '@/components/ui/icons'
 import type { SVGProps } from 'react'
@@ -23,10 +23,9 @@ const PLAN_PREFILL: Record<string, { name: string; price: string; service: strin
 }
 
 const CHANNELS: { Icon: IconType; label: string; value: string; href: string; bg: string }[] = [
-  { Icon: MailIcon,      label: 'Email',    value: 'hello@naty.dev',          href: 'mailto:hello@naty.dev',                 bg: 'rgba(255,255,255,0.1)'  },
-  { Icon: InstagramIcon, label: 'Instagram',value: '@naty.dev',               href: 'https://instagram.com/naty.dev',         bg: 'rgba(255,255,255,0.08)' },
-  { Icon: LinkedInIcon,  label: 'LinkedIn', value: 'NATY — Binus University', href: 'https://linkedin.com/company/naty-dev',  bg: 'rgba(255,255,255,0.06)' },
-  { Icon: GithubIcon,    label: 'GitHub',   value: 'github.com/naty-dev',     href: 'https://github.com/naty-dev',            bg: 'rgba(255,255,255,0.05)' },
+  { Icon: MailIcon,      label: 'Email',    value: 'nusantaratechnology@natynext.com', href: 'mailto:nusantaratechnology@natynext.com',                 bg: 'rgba(255,255,255,0.1)'  },
+  { Icon: InstagramIcon, label: 'Instagram',value: '@nusantaratech.house',             href: 'https://www.instagram.com/nusantaratech.house/',          bg: 'rgba(255,255,255,0.08)' },
+  { Icon: LinkedInIcon,  label: 'LinkedIn', value: 'Nusantara Technology',             href: 'https://www.linkedin.com/in/nusantara-technology-227b62416/', bg: 'rgba(255,255,255,0.06)' },
 ]
 
 const SERVICES: { Icon: IconType; label: string }[] = [
