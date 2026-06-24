@@ -150,7 +150,7 @@ export default function TimelineClient({ timeline: timelineProp, members: member
       />
       <Marquee items={MARQUEE} />
 
-      <div className="max-w-[1100px] mx-auto px-6 md:px-10 pb-40">
+      <div className="max-w-[1100px] mx-auto px-6 md:px-10 pb-24 md:pb-40">
         {/* Legend */}
         <Reveal>
           <div className="flex flex-wrap gap-5 p-5 bg-surface border border-white/[0.05] rounded-card mb-12 mt-12">

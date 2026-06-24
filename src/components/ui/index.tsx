@@ -131,7 +131,7 @@ interface PageHeroProps {
 
 export function PageHero({ label, title, sub }: PageHeroProps) {
   return (
-    <div className="max-w-[1100px] mx-auto px-10 pt-40 pb-20">
+    <div className="max-w-[1100px] mx-auto px-6 md:px-10 pt-28 sm:pt-32 md:pt-40 pb-16 md:pb-20">
       <Reveal>
         <span className="page-hero-label">{label}</span>
       </Reveal>

@@ -63,7 +63,7 @@ export function ProjectModal({ project, onClose, members = MEMBERS }: ProjectMod
     <AnimatePresence onExitComplete={onClose}>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[500] flex items-center justify-center p-6 md:p-10 bg-bg/80"
+          className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 md:p-10 bg-bg/80"
           initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
           animate={{ opacity: 1, backdropFilter: 'blur(20px)' }}
           exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
@@ -103,7 +103,7 @@ export function ProjectModal({ project, onClose, members = MEMBERS }: ProjectMod
 
               {/* Thumbnails — only when there is more than one image */}
               {images.length > 1 && (
-                <div className="flex gap-2 px-8 -mt-8 relative">
+                <div className="flex gap-2 px-5 sm:px-8 -mt-8 relative">
                   {images.map((src, i) => (
                     <button
                       key={src}
@@ -121,14 +121,14 @@ export function ProjectModal({ project, onClose, members = MEMBERS }: ProjectMod
               )}
             </div>
 
-            <div className="flex items-start justify-between gap-4 px-8 pt-7">
+            <div className="flex items-start justify-between gap-4 px-5 sm:px-8 pt-7">
               <div>
                 <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-amber mb-1">{project.type}</div>
-                <h3 className="font-display font-bold text-[26px] tracking-[-0.03em]">{project.name}</h3>
+                <h3 className="font-display font-bold text-[22px] sm:text-[26px] tracking-[-0.03em]">{project.name}</h3>
               </div>
             </div>
 
-            <div className="p-8 pt-6 space-y-6">
+            <div className="p-5 sm:p-8 pt-6 space-y-6">
               {/* Contributors */}
               {project.members.length > 0 && (
                 <div className="flex gap-2 flex-wrap">

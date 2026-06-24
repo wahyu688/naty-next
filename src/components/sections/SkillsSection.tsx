@@ -81,7 +81,7 @@ export default function SkillsSection() {
       id="skills"
       className="min-h-screen flex items-center px-6 bg-surface border-t border-white/[0.05] overflow-hidden"
     >
-      <div className="max-w-[1100px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-20 items-start w-full">
+      <div className="max-w-[1100px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-10 lg:gap-20 items-start w-full">
         <div ref={leftRef}>
           <span className="section-label">Capabilities</span>
           <h2 className="font-display font-bold text-[clamp(1.8rem,4vw,2.8rem)] tracking-[-0.03em] leading-[1.1] mb-6">

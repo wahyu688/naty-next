@@ -52,7 +52,7 @@ export default function WorksClient({ projects: projectsProp, members: membersPr
       />
       <Marquee items={MARQUEE} />
 
-      <div className="max-w-[1100px] mx-auto px-6 md:px-10 pb-40">
+      <div className="max-w-[1100px] mx-auto px-6 md:px-10 pb-24 md:pb-40">
         <div className="flex items-center justify-between flex-wrap gap-4 mt-12 mb-10">
           <Reveal>
             <FilterTabs tabs={FILTERS} active={filter} onChange={setFilter} />

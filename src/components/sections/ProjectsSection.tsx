@@ -65,7 +65,7 @@ function ProjectCard({ p, onOpen }: { p: Project; onOpen: () => void }) {
       </div>
 
       {/* Body */}
-      <div className="p-7 flex-1 flex flex-col">
+      <div className="p-5 sm:p-7 flex-1 flex flex-col">
         <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-amber mb-2">
           {p.type}
         </div>

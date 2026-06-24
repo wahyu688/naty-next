@@ -110,7 +110,7 @@ export default function ContactClient() {
         sub="Open to freelance, internship, and collaboration. Tell us what you're building."
       />
 
-      <div className="max-w-[1100px] mx-auto px-6 md:px-10 pb-40 grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
+      <div className="max-w-[1100px] mx-auto px-6 md:px-10 pb-24 md:pb-40 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
 
         {/* FORM */}
         <Reveal>
@@ -119,7 +119,7 @@ export default function ContactClient() {
 
           {!sent ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-medium tracking-[0.06em] uppercase text-muted mb-2">Your name</label>
                   <input className={inputClass('name')} placeholder="Budi Santoso" value={name} onChange={e => setName(e.target.value)} />

@@ -261,7 +261,7 @@ function MemberCard({ member, index, total }: MemberCardProps) {
       />
 
       {/* Corner number */}
-      <div className="absolute top-7 right-7 z-[2] text-right select-none">
+      <div className="absolute top-4 right-4 sm:top-7 sm:right-7 z-[2] text-right select-none">
         <div className="font-display font-bold leading-[1] tracking-[-0.06em]
                         text-[clamp(3.5rem,10vw,7rem)]"
              style={{ color: 'transparent', WebkitTextStroke: '1px rgba(255,255,255,0.08)' }}>
@@ -270,7 +270,7 @@ function MemberCard({ member, index, total }: MemberCardProps) {
       </div>
 
       {/* Content */}
-      <div className="relative z-[2] px-8 pb-9 w-full">
+      <div className="relative z-[2] px-5 pb-6 sm:px-8 sm:pb-9 w-full">
         <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-violet-soft/80 mb-3">
           {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')} — The Team
         </div>

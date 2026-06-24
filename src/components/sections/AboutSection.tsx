@@ -50,7 +50,7 @@ export default function AboutSection() {
 
   return (
     <section ref={sectionRef} id="about" className="min-h-screen flex items-center px-6 overflow-hidden">
-      <div className="max-w-[1100px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center w-full">
+      <div className="max-w-[1100px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center w-full">
         <div ref={textRef}>
           <span className="section-label">Who we are</span>
           <h2 className="font-display font-bold text-[clamp(1.8rem,4vw,2.8rem)] tracking-[-0.03em] leading-[1.1] mb-6 text-balance">
@@ -74,7 +74,7 @@ export default function AboutSection() {
             <div
               key={s.label}
               data-stat
-              className="bg-surface hover:bg-surface2 transition-colors duration-200 p-9"
+              className="bg-surface hover:bg-surface2 transition-colors duration-200 p-5 sm:p-9"
             >
               <div className="font-display font-bold text-[2.8rem] tracking-[-0.04em] leading-[1]">
                 {s.num.replace(/[^\d∞]+$/, '')}
