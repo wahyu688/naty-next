@@ -10,7 +10,7 @@ export const revalidate = 60
 export default async function TimelinePage() {
   const [timelineRes, membersRes] = await Promise.allSettled([
     supabase.from('timeline').select('*').order('sort_order'),
-    supabase.from('members').select('*').order('id'),
+    supabase.from('members').select('id,name,short_name,role,bio,tags,github,linkedin,cv,portfolio,photo_url,updated_at').order('id'),
   ])
 
   const timeline = timelineRes.status === 'fulfilled' && timelineRes.value.data?.length

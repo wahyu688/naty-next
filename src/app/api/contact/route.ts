@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, getServiceSupabase } from '@/lib/supabase'
+import { authorizeDashboardRequest } from '@/lib/dashboardAuth'
 
 // POST /api/contact — save contact form submission (public, no password)
 export async function POST(req: NextRequest) {
@@ -23,8 +24,7 @@ export async function POST(req: NextRequest) {
 
 // GET /api/contact — fetch all submissions (dashboard only)
 export async function GET(req: NextRequest) {
-  const pwd = req.headers.get('x-dashboard-password')
-  if (pwd !== process.env.DASHBOARD_PASSWORD) {
+  if (!(await authorizeDashboardRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const sb = getServiceSupabase()
@@ -38,8 +38,7 @@ export async function GET(req: NextRequest) {
 
 // PATCH /api/contact — mark as read/unread
 export async function PATCH(req: NextRequest) {
-  const pwd = req.headers.get('x-dashboard-password')
-  if (pwd !== process.env.DASHBOARD_PASSWORD) {
+  if (!(await authorizeDashboardRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const { id, is_read } = await req.json()
@@ -58,8 +57,7 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE /api/contact — delete a submission
 export async function DELETE(req: NextRequest) {
-  const pwd = req.headers.get('x-dashboard-password')
-  if (pwd !== process.env.DASHBOARD_PASSWORD) {
+  if (!(await authorizeDashboardRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const { id } = await req.json()

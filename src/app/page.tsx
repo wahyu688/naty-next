@@ -51,7 +51,7 @@ function rowToProject(row: ProjectRow): Project {
 
 export default async function HomePage() {
   const [membersRes, projectsRes, pricingRes] = await Promise.allSettled([
-    supabase.from('members').select('*').order('id'),
+    supabase.from('members').select('id,name,short_name,role,bio,tags,github,linkedin,cv,portfolio,photo_url,updated_at').order('id'),
     supabase.from('projects').select('*').order('sort_order'),
     supabase.from('pricing').select('*').order('sort_order'),
   ])

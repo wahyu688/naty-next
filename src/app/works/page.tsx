@@ -10,7 +10,7 @@ export const revalidate = 60
 export default async function WorksPage() {
   const [projectsRes, membersRes] = await Promise.allSettled([
     supabase.from('projects').select('*').order('sort_order'),
-    supabase.from('members').select('*').order('id'),
+    supabase.from('members').select('id,name,short_name,role,bio,tags,github,linkedin,cv,portfolio,photo_url,updated_at').order('id'),
   ])
 
   const projects = projectsRes.status === 'fulfilled' && projectsRes.value.data?.length

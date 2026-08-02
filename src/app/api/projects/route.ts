@@ -2,14 +2,11 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceSupabase } from '@/lib/supabase'
-
-function isAuthorized(req: NextRequest) {
-  return req.headers.get('x-dashboard-password') === process.env.DASHBOARD_PASSWORD
-}
+import { authorizeDashboardRequest } from '@/lib/dashboardAuth'
 
 // GET /api/projects — fetch all projects
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await authorizeDashboardRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const sb = getServiceSupabase()
@@ -20,7 +17,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/projects — create new project
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await authorizeDashboardRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const body = await req.json()
@@ -39,7 +36,7 @@ export async function POST(req: NextRequest) {
 
 // PATCH /api/projects — update a project
 export async function PATCH(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await authorizeDashboardRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const body = await req.json()
@@ -59,7 +56,7 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE /api/projects — delete a project
 export async function DELETE(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await authorizeDashboardRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const { id } = await req.json()

@@ -2,11 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
-
-function isAuthorized(req: NextRequest) {
-  const pwd = req.headers.get('x-dashboard-password')
-  return pwd === process.env.DASHBOARD_PASSWORD
-}
+import { authorizeDashboardRequest } from '@/lib/dashboardAuth'
 
 function extractGithubUsername(input: string): string | null {
   const clean = input.trim().replace(/\/$/, '')
@@ -38,7 +34,7 @@ async function fetchGitHubData(username: string) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await authorizeDashboardRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

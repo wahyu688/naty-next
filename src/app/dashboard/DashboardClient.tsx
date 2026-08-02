@@ -4,59 +4,14 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { TEAM_COLORS } from '@/lib/data'
 import type { MemberRow, ProjectRow, PricingRow, TimelineRow, ContactSubmission } from '@/lib/supabase'
 import clsx from 'clsx'
+import AuthGate, { type SessionMemberInfo, type UnlockMode } from '@/components/dashboard/AuthGate'
+import MembersAuthSection from '@/components/dashboard/MembersAuthSection'
+import LeadsSection from '@/components/dashboard/LeadsSection'
+import EngagementsSection from '@/components/dashboard/EngagementsSection'
+import type { EngagementRow } from '@/lib/supabase'
 
 const ACCENTS = TEAM_COLORS.map(c => c.accent)
-type Section = 'members' | 'projects' | 'pricing' | 'timeline' | 'inquiries'
-
-// ═══════════════════════════════════════════════════════════
-// PASSWORD GATE
-// ═══════════════════════════════════════════════════════════
-function PasswordGate({ onUnlock }: { onUnlock: (pwd: string) => void }) {
-  const [input, setInput] = useState('')
-  const [error, setError] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async () => {
-    if (!input.trim()) return
-    setLoading(true)
-    const res = await fetch('/api/members', { headers: { 'x-dashboard-password': input } })
-    setLoading(false)
-    if (res.ok) { onUnlock(input) } else {
-      setError(true)
-      setTimeout(() => setError(false), 1500)
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-bg flex items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-10">
-          <div className="font-display font-bold text-[28px] tracking-[-0.04em] mb-2">
-            NAT<span className="text-violet">Y</span>
-          </div>
-          <p className="text-[14px] text-muted">Dashboard — team access only</p>
-        </div>
-        <div className={clsx('bg-surface border rounded-card p-8 transition-all duration-200',
-          error ? 'border-red/60 shadow-[0_0_0_3px_rgba(255,255,255,0.12)]' : 'border-white/[0.09]')}>
-          <label className="block text-[12px] font-medium tracking-[0.08em] uppercase text-muted mb-3">Password</label>
-          <input type="password" value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-            placeholder="Enter dashboard password" autoFocus
-            className="w-full bg-bg border border-white/[0.09] rounded-sm px-4 py-3 text-[14px]
-                       text-ink outline-none transition-all duration-200
-                       focus:border-violet/50 focus:shadow-[0_0_0_3px_rgba(255,255,255,0.08)]
-                       placeholder:text-muted/40" />
-          {error && <p className="text-[12px] text-red mt-2">Incorrect password</p>}
-          <button onClick={handleSubmit} disabled={loading}
-            className="mt-4 w-full font-display font-semibold text-[14px] py-3 rounded-sm
-                       bg-ink text-bg transition-all duration-200 hover:opacity-90 disabled:opacity-50">
-            {loading ? 'Checking...' : 'Enter Dashboard →'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+type Section = 'members' | 'projects' | 'pricing' | 'timeline' | 'inquiries' | 'accounts' | 'engagements'
 
 // ═══════════════════════════════════════════════════════════
 // AI SUMMARIZE MODAL
@@ -1025,8 +980,10 @@ function NewTimelineModal({ password, onCreated, onClose }: {
 // ═══════════════════════════════════════════════════════════
 // MAIN DASHBOARD
 // ═══════════════════════════════════════════════════════════
-export default function DashboardClient() {
-  const [password, setPassword] = useState<string | null>(null)
+export default function DashboardClient({ initialSessionMember }: { initialSessionMember: SessionMemberInfo | null }) {
+  const [password, setPassword] = useState<string | null>(initialSessionMember ? '__session_auth__' : null)
+  const [authMode, setAuthMode] = useState<UnlockMode | null>(initialSessionMember ? 'session' : null)
+  const [sessionMember, setSessionMember] = useState<SessionMemberInfo | null>(initialSessionMember)
   const [section, setSection] = useState<Section>('members')
 
   // Members
@@ -1056,15 +1013,27 @@ export default function DashboardClient() {
   const [inquiriesLoaded, setInquiriesLoaded] = useState(false)
   const [inquiriesLoading, setInquiriesLoading] = useState(false)
 
-  // Restore password from session
-  useEffect(() => {
-    const cached = sessionStorage.getItem('naty_dashboard_pwd')
-    if (cached) setPassword(cached)
-  }, [])
+  // Engagements
+  const [engagements, setEngagements] = useState<EngagementRow[]>([])
+  const [engagementsLoaded, setEngagementsLoaded] = useState(false)
+  const [engagementsLoading, setEngagementsLoading] = useState(false)
 
-  const handleUnlock = useCallback(async (pwd: string) => {
-    sessionStorage.setItem('naty_dashboard_pwd', pwd)
-    setPassword(pwd)
+  // Restore legacy password from sessionStorage on refresh. Session-mode
+  // auth doesn't need this — it's verified server-side every load via
+  // initialSessionMember (Supabase's cookie survives refresh on its own).
+  useEffect(() => {
+    if (initialSessionMember) return
+    const cachedPwd = sessionStorage.getItem('naty_dashboard_pwd')
+    const cachedMode = sessionStorage.getItem('naty_dashboard_mode') as UnlockMode | null
+    if (cachedPwd) { setPassword(cachedPwd); setAuthMode(cachedMode ?? 'legacy') }
+  }, [initialSessionMember])
+
+  const handleUnlock = useCallback(async (token: string, mode: UnlockMode, member?: SessionMemberInfo) => {
+    sessionStorage.setItem('naty_dashboard_pwd', token)
+    sessionStorage.setItem('naty_dashboard_mode', mode)
+    setPassword(token)
+    setAuthMode(mode)
+    setSessionMember(member ?? null)
   }, [])
 
   // Fetch members when password is set
@@ -1103,40 +1072,34 @@ export default function DashboardClient() {
         .then(r => r.json()).then(d => { if (Array.isArray(d)) setInquiries(d); setInquiriesLoaded(true) })
         .finally(() => setInquiriesLoading(false))
     }
+    if (section === 'engagements' && !engagementsLoaded) {
+      setEngagementsLoading(true)
+      fetch('/api/engagements', { headers: { 'x-dashboard-password': password } })
+        .then(r => r.json()).then(d => { if (Array.isArray(d)) setEngagements(d); setEngagementsLoaded(true) })
+        .finally(() => setEngagementsLoading(false))
+    }
   }, [section, password])
 
   const handleLogout = () => {
+    if (authMode === 'session') fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     sessionStorage.removeItem('naty_dashboard_pwd')
-    setPassword(null); setMembers([])
+    sessionStorage.removeItem('naty_dashboard_mode')
+    setPassword(null); setAuthMode(null); setSessionMember(null); setMembers([])
   }
 
-  const markRead = async (id: string, is_read: boolean) => {
-    await fetch('/api/contact', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': password! },
-      body: JSON.stringify({ id, is_read }),
-    })
-    setInquiries(prev => prev.map(i => i.id === id ? { ...i, is_read } : i))
-  }
 
-  const deleteInquiry = async (id: string) => {
-    if (!confirm('Delete this inquiry?')) return
-    await fetch('/api/contact', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': password! },
-      body: JSON.stringify({ id }),
-    })
-    setInquiries(prev => prev.filter(i => i.id !== id))
-  }
+  if (!password) return <AuthGate onUnlock={handleUnlock} />
 
-  if (!password) return <PasswordGate onUnlock={handleUnlock} />
+  const isAdmin = authMode === 'legacy' || sessionMember?.access_role === 'ADMIN'
 
   const NAV_ITEMS: { key: Section; label: string; count?: number }[] = [
     { key: 'members',   label: 'Members',   count: members.length },
     { key: 'projects',  label: 'Projects',  count: projectsLoaded ? projects.length : undefined },
     { key: 'pricing',   label: 'Pricing',   count: pricingLoaded ? pricing.length : undefined },
     { key: 'timeline',  label: 'Timeline',  count: timelineLoaded ? timeline.length : undefined },
-    { key: 'inquiries', label: 'Inquiries', count: inquiriesLoaded ? inquiries.filter(i => !i.is_read).length : undefined },
+    { key: 'inquiries', label: 'Leads', count: inquiriesLoaded ? inquiries.filter(i => !i.is_read).length : undefined },
+    { key: 'engagements', label: 'Engagements', count: engagementsLoaded ? engagements.length : undefined },
+    ...(isAdmin ? [{ key: 'accounts' as Section, label: 'Accounts' }] : []),
   ]
 
   const displayedMembers = activeTab === 'all' ? members : members.filter(m => m.id === activeTab)
@@ -1165,6 +1128,11 @@ export default function DashboardClient() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {sessionMember && (
+              <span className="text-[12px] text-muted hidden sm:inline">
+                {sessionMember.name} · <span className="text-muted/70">{sessionMember.access_role}</span>
+              </span>
+            )}
             <a href="/" target="_blank" className="text-[13px] text-muted hover:text-ink transition-colors">View site →</a>
             <button onClick={handleLogout} className="text-[13px] text-muted hover:text-red transition-colors">Logout</button>
           </div>
@@ -1326,54 +1294,42 @@ export default function DashboardClient() {
           </>
         )}
 
-        {/* ── INQUIRIES ── */}
+        {/* ── LEADS (formerly Inquiries, extended with M3 pipeline) ── */}
         {section === 'inquiries' && (
-          <>
-            <div className="mb-8">
-              <h1 className="font-display font-bold text-[28px] tracking-[-0.04em] mb-1">Inquiries</h1>
-              <p className="text-[14px] text-muted">Pesan masuk dari form contact. Klik untuk tandai sudah dibaca.</p>
-            </div>
-            {inquiriesLoading
-              ? <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="bg-surface border border-white/[0.05] rounded-card h-[80px] animate-pulse" />)}</div>
-              : inquiries.length === 0
-                ? <div className="text-center py-16 text-muted text-[14px]">Belum ada pesan masuk.</div>
-                : <div className="space-y-3">
-                    {inquiries.map(inq => (
-                      <div key={inq.id} className={clsx('bg-surface border rounded-card p-5 transition-all duration-200',
-                        inq.is_read ? 'border-white/[0.05] opacity-70' : 'border-violet/20')}>
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-2">
-                              {!inq.is_read && <span className="w-2 h-2 rounded-full bg-violet flex-shrink-0" />}
-                              <span className="font-display font-semibold text-[15px]">{inq.name}</span>
-                              <span className="text-[12px] text-muted">{inq.email}</span>
-                              {inq.company && <span className="text-[12px] text-muted">· {inq.company}</span>}
-                            </div>
-                            {(inq.service || inq.budget) && (
-                              <div className="flex gap-2 mb-2">
-                                {inq.service && <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/10 text-violet-soft">{inq.service}</span>}
-                                {inq.budget && <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-muted">{inq.budget}</span>}
-                              </div>
-                            )}
-                            <p className="text-[13px] text-muted leading-[1.65] line-clamp-3">{inq.message}</p>
-                            <p className="text-[11px] text-muted/50 mt-2">{new Date(inq.created_at).toLocaleString('id-ID')}</p>
-                          </div>
-                          <div className="flex flex-col gap-2 flex-shrink-0">
-                            <button onClick={() => markRead(inq.id, !inq.is_read)}
-                              className="text-[12px] font-medium px-3 py-1.5 rounded-full border border-white/[0.09] text-muted hover:text-ink hover:border-white/20 transition-colors whitespace-nowrap">
-                              {inq.is_read ? 'Tandai belum dibaca' : '✓ Tandai dibaca'}
-                            </button>
-                            <button onClick={() => deleteInquiry(inq.id)}
-                              className="text-[12px] font-medium px-3 py-1.5 rounded-full border border-red/20 text-red hover:bg-red/10 transition-colors">
-                              Hapus
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-            }
-          </>
+          <LeadsSection
+            inquiries={inquiries}
+            loading={inquiriesLoading}
+            password={password}
+            members={members}
+            isSessionAuth={authMode === 'session'}
+            isAdmin={isAdmin}
+            onUpdated={updated => setInquiries(prev => prev.map(i => i.id === updated.id ? updated : i))}
+            onDeleted={id => setInquiries(prev => prev.filter(i => i.id !== id))}
+            onEngagementCreated={() => { setEngagementsLoaded(false); setSection('engagements') }}
+          />
+        )}
+
+        {/* ── ENGAGEMENTS ── */}
+        {section === 'engagements' && (
+          <EngagementsSection
+            engagements={engagements}
+            members={members}
+            loading={engagementsLoading}
+            password={password}
+            canManage={isAdmin || sessionMember?.access_role === 'PM'}
+            canExecutePayout={isAdmin}
+            currentMemberId={sessionMember?.id ?? null}
+            onUpdated={updated => setEngagements(prev => prev.map(p => p.id === updated.id ? updated : p))}
+          />
+        )}
+
+        {/* ── ACCOUNTS (ADMIN only) ── */}
+        {section === 'accounts' && isAdmin && (
+          <MembersAuthSection
+            members={members}
+            password={password}
+            onUpdated={updated => setMembers(prev => prev.map(p => p.id === updated.id ? updated : p))}
+          />
         )}
       </div>
     </div>
