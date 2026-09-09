@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { TEAM_COLORS } from '@/lib/data'
 import type { MemberRow, ProjectRow, PricingRow, TimelineRow, ContactSubmission } from '@/lib/supabase'
 import clsx from 'clsx'
+import InvoiceSection from './InvoiceSection'
 
 const ACCENTS = TEAM_COLORS.map(c => c.accent)
-type Section = 'members' | 'projects' | 'pricing' | 'timeline' | 'inquiries'
+type Section = 'members' | 'projects' | 'pricing' | 'timeline' | 'inquiries' | 'invoice'
 
 // ═══════════════════════════════════════════════════════════
 // PASSWORD GATE
@@ -1137,6 +1138,7 @@ export default function DashboardClient() {
     { key: 'pricing',   label: 'Pricing',   count: pricingLoaded ? pricing.length : undefined },
     { key: 'timeline',  label: 'Timeline',  count: timelineLoaded ? timeline.length : undefined },
     { key: 'inquiries', label: 'Inquiries', count: inquiriesLoaded ? inquiries.filter(i => !i.is_read).length : undefined },
+    { key: 'invoice',   label: 'Invoice' },
   ]
 
   const displayedMembers = activeTab === 'all' ? members : members.filter(m => m.id === activeTab)
@@ -1375,6 +1377,9 @@ export default function DashboardClient() {
             }
           </>
         )}
+
+        {/* ── INVOICE ── */}
+        {section === 'invoice' && <InvoiceSection />}
       </div>
     </div>
   )
